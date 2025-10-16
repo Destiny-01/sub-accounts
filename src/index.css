@@ -2,58 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Cyberpunk Vault Wars Design System - All colors MUST be HSL */
+/* Ancient Egypt Tomb Raiders Design System - All colors MUST be HSL */
 
 @layer base {
   :root {
-    /* Core cyberpunk palette */
-    --background: 220 30% 3%;
-    --foreground: 180 100% 90%;
+    /* Ancient Egyptian palette */
+    --background: 40 40% 12%;
+    --foreground: 45 80% 92%;
 
-    --card: 220 25% 8%;
-    --card-foreground: 180 100% 90%;
+    --card: 40 35% 18%;
+    --card-foreground: 45 80% 92%;
 
-    --popover: 220 25% 8%;
-    --popover-foreground: 180 100% 90%;
+    --popover: 40 35% 18%;
+    --popover-foreground: 45 80% 92%;
 
-    /* Neon teal primary */
-    --primary: 185 100% 50%;
-    --primary-foreground: 220 30% 3%;
+    /* Golden primary */
+    --primary: 43 69% 52%;
+    --primary-foreground: 40 40% 12%;
 
-    /* Dark secondary with neon accent */
-    --secondary: 220 25% 12%;
-    --secondary-foreground: 185 100% 70%;
+    /* Lapis lazuli secondary */
+    --secondary: 221 83% 33%;
+    --secondary-foreground: 45 80% 92%;
 
-    --muted: 220 20% 15%;
-    --muted-foreground: 180 50% 60%;
+    --muted: 40 30% 25%;
+    --muted-foreground: 45 40% 65%;
 
-    /* Neon magenta accent */
-    --accent: 300 100% 50%;
-    --accent-foreground: 220 30% 3%;
+    /* Turquoise accent */
+    --accent: 174 72% 56%;
+    --accent-foreground: 40 40% 12%;
 
-    --destructive: 0 100% 60%;
-    --destructive-foreground: 180 100% 90%;
+    --destructive: 14 100% 50%;
+    --destructive-foreground: 45 80% 92%;
 
-    --border: 185 100% 20%;
-    --input: 220 25% 10%;
-    --ring: 185 100% 50%;
+    --border: 43 50% 35%;
+    --input: 40 35% 20%;
+    --ring: 43 69% 52%;
 
-    /* Cyberpunk specific colors */
-    --neon-green: 120 100% 50%;
-    --neon-purple: 270 100% 60%;
-    --neon-pink: 320 100% 70%;
-    --matrix-green: 120 100% 40%;
-    --cyber-blue: 200 100% 60%;
+    /* Egyptian specific colors */
+    --royal-gold: 43 69% 52%;
+    --lapis-blue: 221 83% 33%;
+    --turquoise: 174 72% 56%;
+    --papyrus: 45 60% 85%;
+    --emerald: 142 71% 45%;
     
     /* Glowing effects */
-    --glow-primary: 185 100% 50%;
-    --glow-accent: 300 100% 50%;
-    --glow-success: 120 100% 50%;
+    --glow-primary: 43 69% 52%;
+    --glow-accent: 174 72% 56%;
+    --glow-success: 142 71% 45%;
     
     /* Gradients */
-    --gradient-cyber: linear-gradient(135deg, hsl(185 100% 50%), hsl(270 100% 60%));
-    --gradient-vault: linear-gradient(45deg, hsl(300 100% 50%), hsl(185 100% 50%));
-    --gradient-matrix: linear-gradient(180deg, hsl(220 30% 3%), hsl(220 25% 8%));
+    --gradient-egyptian: linear-gradient(135deg, hsl(43 69% 52%), hsl(174 72% 56%));
+    --gradient-tomb: linear-gradient(45deg, hsl(221 83% 33%), hsl(43 69% 52%));
+    --gradient-sand: linear-gradient(180deg, hsl(40 40% 12%), hsl(40 35% 18%));
     
     /* Animations */
     --transition-glow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -78,27 +78,27 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  /* Dark mode inherits the cyberpunk theme */
+  /* Dark mode inherits the Egyptian theme */
   .dark {
-    --background: 220 30% 3%;
-    --foreground: 180 100% 90%;
-    --card: 220 25% 8%;
-    --card-foreground: 180 100% 90%;
-    --popover: 220 25% 8%;
-    --popover-foreground: 180 100% 90%;
-    --primary: 185 100% 50%;
-    --primary-foreground: 220 30% 3%;
-    --secondary: 220 25% 12%;
-    --secondary-foreground: 185 100% 70%;
-    --muted: 220 20% 15%;
-    --muted-foreground: 180 50% 60%;
-    --accent: 300 100% 50%;
-    --accent-foreground: 220 30% 3%;
-    --destructive: 0 100% 60%;
-    --destructive-foreground: 180 100% 90%;
-    --border: 185 100% 20%;
-    --input: 220 25% 10%;
-    --ring: 185 100% 50%;
+    --background: 40 40% 12%;
+    --foreground: 45 80% 92%;
+    --card: 40 35% 18%;
+    --card-foreground: 45 80% 92%;
+    --popover: 40 35% 18%;
+    --popover-foreground: 45 80% 92%;
+    --primary: 43 69% 52%;
+    --primary-foreground: 40 40% 12%;
+    --secondary: 221 83% 33%;
+    --secondary-foreground: 45 80% 92%;
+    --muted: 40 30% 25%;
+    --muted-foreground: 45 40% 65%;
+    --accent: 174 72% 56%;
+    --accent-foreground: 40 40% 12%;
+    --destructive: 14 100% 50%;
+    --destructive-foreground: 45 80% 92%;
+    --border: 43 50% 35%;
+    --input: 40 35% 20%;
+    --ring: 43 69% 52%;
   }
 }
 
@@ -109,10 +109,10 @@
 
   body {
     @apply bg-background text-foreground overflow-x-hidden;
-    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-family: 'Papyrus', 'Georgia', serif;
   }
 
-  /* Cyberpunk animations */
+  /* Egyptian animations */
   @keyframes glitch {
     0%, 100% { transform: translateX(0); }
     20% { transform: translateX(-2px); }
@@ -155,18 +155,18 @@
     text-shadow: 0 0 10px currentColor;
   }
 
-  .cyber-border {
-    border: 1px solid hsl(var(--primary) / 0.5);
+  .egyptian-border {
+    border: 2px double hsl(var(--primary) / 0.5);
     background: linear-gradient(45deg, transparent, hsl(var(--primary) / 0.1), transparent);
   }
 
-  .matrix-bg {
-    background: var(--gradient-matrix);
+  .desert-bg {
+    background: var(--gradient-sand);
     position: relative;
     overflow: hidden;
   }
 
-  .matrix-bg::before {
+  .desert-bg::before {
     content: '';
     position: absolute;
     top: 0;
@@ -174,70 +174,83 @@
     right: 0;
     bottom: 0;
     background-image: 
-      radial-gradient(1px 1px at 20px 30px, hsl(var(--neon-green) / 0.3), transparent),
+      radial-gradient(1px 1px at 20px 30px, hsl(var(--royal-gold) / 0.3), transparent),
       radial-gradient(1px 1px at 40px 70px, hsl(var(--primary) / 0.2), transparent),
       radial-gradient(2px 2px at 90px 40px, hsl(var(--accent) / 0.2), transparent);
     background-size: 100px 100px;
-    animation: matrix-rain 20s linear infinite;
+    animation: sand-drift 20s linear infinite;
+  }
+  
+  @keyframes sand-drift {
+    0% { transform: translateX(-100vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.3; }
+    90% { opacity: 0.3; }
+    100% { transform: translateX(100vh) rotate(360deg); opacity: 0; }
   }
 }
 
 @layer components {
-  /* Cyberpunk button variants */
-  .btn-cyber {
-    @apply relative overflow-hidden bg-transparent border border-primary text-primary font-mono uppercase tracking-wider;
+  /* Egyptian button variants */
+  .btn-egyptian {
+    @apply relative overflow-hidden bg-transparent border-2 border-primary text-primary font-serif uppercase tracking-wider;
     @apply hover:bg-primary hover:text-primary-foreground hover:shadow-lg;
     @apply transition-all duration-300 ease-out;
     @apply before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-primary/20 before:to-transparent;
     @apply before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-500;
   }
 
-  .btn-cyber-primary {
-    @apply btn-cyber border-primary text-primary hover:bg-primary hover:text-background glow-primary;
+  .btn-egyptian-primary {
+    @apply btn-egyptian border-primary text-primary hover:bg-primary hover:text-background glow-primary;
   }
 
-  .btn-cyber-accent {
-    @apply btn-cyber border-accent text-accent hover:bg-accent hover:text-background glow-accent;
+  .btn-egyptian-accent {
+    @apply btn-egyptian border-accent text-accent hover:bg-accent hover:text-background glow-accent;
   }
 
-  .btn-cyber-success {
-    @apply btn-cyber border-neon-green text-neon-green hover:bg-neon-green hover:text-background;
-    box-shadow: 0 0 15px hsl(var(--neon-green) / 0.4);
+  .btn-egyptian-success {
+    @apply btn-egyptian border-emerald text-emerald hover:bg-emerald hover:text-background;
+    box-shadow: 0 0 15px hsl(var(--emerald) / 0.4);
   }
 
-  /* Cyberpunk input styles */
-  .input-cyber {
-    @apply bg-card/50 border border-primary/30 text-foreground placeholder:text-muted-foreground;
+  /* Egyptian input styles */
+  .input-egyptian {
+    @apply bg-card/50 border-2 border-primary/30 text-foreground placeholder:text-muted-foreground;
     @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-lg;
-    @apply transition-all duration-300 cyber-border;
+    @apply transition-all duration-300 egyptian-border;
   }
 
-  /* Cyberpunk card styles */
-  .card-cyber {
-    @apply bg-card/80 backdrop-blur-sm border border-primary/30 cyber-border;
+  /* Egyptian card styles */
+  .card-papyrus {
+    @apply bg-card/80 backdrop-blur-sm border-2 border-primary/30 egyptian-border;
     @apply hover:border-primary/60 transition-all duration-300;
   }
-
-  /* Glitch text effect */
-  .text-glitch {
-    @apply relative text-primary font-mono uppercase tracking-wider;
-    animation: var(--animation-glitch);
+  
+  .egyptian-border {
+    border-style: double;
+    background: linear-gradient(45deg, transparent, hsl(var(--primary) / 0.1), transparent);
   }
 
-  .text-glitch::before,
-  .text-glitch::after {
+  /* Hieroglyph text effect */
+  .text-hieroglyph {
+    @apply relative text-primary font-serif uppercase tracking-wider;
+    animation: var(--animation-glitch);
+    text-shadow: 2px 2px 4px hsl(var(--primary) / 0.3);
+  }
+
+  .text-hieroglyph::before,
+  .text-hieroglyph::after {
     content: attr(data-text);
     @apply absolute top-0 left-0 w-full h-full;
   }
 
-  .text-glitch::before {
+  .text-hieroglyph::before {
     @apply text-accent;
     clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
     transform: translateX(-2px);
   }
 
-  .text-glitch::after {
-    @apply text-neon-green;
+  .text-hieroglyph::after {
+    @apply text-emerald;
     clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
     transform: translateX(2px);
   }

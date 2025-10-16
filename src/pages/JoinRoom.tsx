@@ -4,8 +4,8 @@ import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CyberCard } from "@/components/ui/cyber-card";
-import MatrixBackground from "@/components/MatrixBackground";
+import { PapyrusCard } from "@/components/ui/papyrus-card";
+import HieroglyphBackground from "@/components/HieroglyphBackground";
 import VaultDisplay from "@/components/game/VaultDisplay";
 import { Navbar } from "@/components/layout/Navbar";
 import { ConnectWalletModal } from "@/components/wallet/ConnectWalletModal";
@@ -26,10 +26,10 @@ export default function JoinRoom() {
   const eventHandlers = useContractEvents({
     onRoomJoined: (event) => {
       if (event.opponent.toLowerCase() === address?.toLowerCase()) {
-        toast({
-          title: "🎯 Battle begins!",
-          description: "Successfully joined the vault war. Good luck!",
-        });
+      toast({
+        title: "⚔️ The duel begins!",
+        description: "Successfully joined the expedition. May the gods favor you!",
+      });
 
         // Navigate to game screen with room details
         navigate(
@@ -197,8 +197,8 @@ export default function JoinRoom() {
       toast({
         title: "❌ Invalid input",
         description: !roomValidation.isValid 
-          ? `Room issue: ${roomValidation.error || "Invalid room"}`
-          : "Please complete your 4-digit vault code.",
+          ? `Chamber issue: ${roomValidation.error || "Invalid chamber"}`
+          : "Please complete your 4-digit sacred code.",
         variant: "destructive",
       });
       return;
@@ -208,8 +208,8 @@ export default function JoinRoom() {
       setIsJoining(true);
 
       toast({
-        title: "🔐 Joining vault battle...",
-        description: "Encrypting your vault and connecting to the battle.",
+        title: "🏺 Entering the tomb...",
+        description: "Locking your sacred code and joining the duel.",
       });
 
       // Convert string array to number array
@@ -227,38 +227,38 @@ export default function JoinRoom() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black">
-      <MatrixBackground />
+    <div className="relative min-h-screen overflow-hidden desert-bg">
+      <HieroglyphBackground />
 
       <Navbar />
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
-          <CyberCard className="p-8">
+          <PapyrusCard className="p-8">
             <div className="space-y-6">
               {/* Header */}
               <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-                  🎯 Join Vault Battle 🎯
+                <h1 className="text-3xl font-bold font-egyptian bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  𓀀 Join the Expedition 𓀀
                 </h1>
-                <p className="text-muted-foreground">
-                  Enter room ID and secure your 4-digit vault code
+                <p className="text-muted-foreground font-serif">
+                  Enter chamber ID and lock your sacred 4-digit code
                 </p>
               </div>
 
               {/* Invite Message */}
               {showInviteMessage && (
-                <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 text-center">
-                  <p className="text-primary font-semibold">
-                    🎪 You've been invited to join Room {roomId}!
+                <div className="bg-primary/10 border-2 border-double border-primary/30 rounded-lg p-4 text-center egyptian-border">
+                  <p className="text-primary font-egyptian font-semibold">
+                    🏺 You've been summoned to Chamber {roomId}!
                   </p>
                 </div>
               )}
 
               {/* Room ID Input */}
               <div className="space-y-2">
-                <Label htmlFor="roomId" className="text-lg font-semibold">
-                  Room ID
+                <Label htmlFor="roomId" className="text-lg font-egyptian font-semibold">
+                  Chamber ID
                 </Label>
                 <div className="relative">
                   <Input
@@ -286,35 +286,35 @@ export default function JoinRoom() {
                 )}
               </div>
 
-              {/* Room Details */}
+              {/* Chamber Details */}
               {roomData && roomValidation.isValid && (
-                <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 space-y-3">
-                  <h3 className="font-semibold text-primary">Room Details</h3>
-                  <div className="space-y-2 text-sm">
+                <div className="bg-primary/10 border-2 border-double border-primary/30 rounded-lg p-4 space-y-3 egyptian-border">
+                  <h3 className="font-egyptian font-semibold text-primary">Chamber Details</h3>
+                  <div className="space-y-2 text-sm font-serif">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Creator:</span>
+                      <span className="text-muted-foreground">Tomb Keeper:</span>
                       <span className="font-mono text-xs">{roomData.creator.slice(0, 6)}...{roomData.creator.slice(-4)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Wager:</span>
+                      <span className="text-muted-foreground">Gold Wager:</span>
                       <span className="font-semibold">{roomData.wager} ETH</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Status:</span>
-                      <span className="text-yellow-500">Waiting for opponent</span>
+                      <span className="text-yellow-500">Awaiting challenger</span>
                     </div>
                   </div>
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded p-3 mt-3">
-                    <p className="text-yellow-500 text-sm font-medium">
-                      💰 You will be charged {roomData.wager} ETH to join this battle
+                  <div className="bg-yellow-500/10 border-2 border-double border-yellow-500/30 rounded p-3 mt-3">
+                    <p className="text-yellow-500 text-sm font-serif font-medium">
+                      💰 You will wager {roomData.wager} ETH to enter this duel
                     </p>
                   </div>
                 </div>
               )}
 
-              {/* Vault Code Section */}
+              {/* Tomb Code Section */}
               <div className="space-y-4">
-                <Label className="text-lg font-semibold">Your Vault Code</Label>
+                <Label className="text-lg font-egyptian font-semibold">Your Sacred Code</Label>
 
                 {/* Vault Display */}
                 <VaultDisplay
@@ -322,7 +322,7 @@ export default function JoinRoom() {
                   vaultDigits={vaultCode}
                   masked={false}
                   breachedIndices={[]}
-                  label="Your Vault"
+                  label="Your Tomb"
                 />
 
                 {/* Number Keypad */}
@@ -375,20 +375,20 @@ export default function JoinRoom() {
                 <Button
                   onClick={handleJoinRoom}
                   disabled={!isFormValid || isJoining || isLoading || roomValidation.isChecking}
-                  className="w-full h-12 text-lg font-bold"
+                  className="w-full h-12 text-lg font-bold btn-egyptian-primary"
                 >
                   {isJoining || isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Joining Battle...
+                      Entering Tomb...
                     </>
                   ) : roomValidation.isChecking ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Checking Room...
+                      Checking Chamber...
                     </>
                   ) : (
-                    "🎯 Join Vault Battle 🎯"
+                    "𓀀 Join the Expedition 𓀀"
                   )}
                 </Button>
 
@@ -402,7 +402,7 @@ export default function JoinRoom() {
                 </Button>
               </div>
             </div>
-          </CyberCard>
+          </PapyrusCard>
         </div>
       </div>
 

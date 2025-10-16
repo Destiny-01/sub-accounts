@@ -47,12 +47,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Cyberpunk color extensions
-        "neon-green": "hsl(var(--neon-green))",
-        "neon-purple": "hsl(var(--neon-purple))",
-        "neon-pink": "hsl(var(--neon-pink))",
-        "matrix-green": "hsl(var(--matrix-green))",
-        "cyber-blue": "hsl(var(--cyber-blue))",
+        // Egyptian color extensions
+        "royal-gold": "hsl(var(--royal-gold))",
+        "lapis-blue": "hsl(var(--lapis-blue))",
+        "turquoise": "hsl(var(--turquoise))",
+        "papyrus": "hsl(var(--papyrus))",
+        "emerald": "hsl(var(--emerald))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -109,8 +109,8 @@ export default {
         "slide-up": "slide-up 0.5s ease-out",
       },
       fontFamily: {
-        'mono': ['JetBrains Mono', 'Courier New', 'monospace'],
-        'cyber': ['Orbitron', 'JetBrains Mono', 'monospace'],
+        'serif': ['Papyrus', 'Georgia', 'serif'],
+        'egyptian': ['Cinzel', 'Georgia', 'serif'],
       },
     },
   },

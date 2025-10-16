@@ -4,8 +4,8 @@ import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CyberCard } from "@/components/ui/cyber-card";
-import MatrixBackground from "@/components/MatrixBackground";
+import { PapyrusCard } from "@/components/ui/papyrus-card";
+import HieroglyphBackground from "@/components/HieroglyphBackground";
 import VaultDisplay from "@/components/game/VaultDisplay";
 import { Navbar } from "@/components/layout/Navbar";
 import { ConnectWalletModal } from "@/components/wallet/ConnectWalletModal";
@@ -96,7 +96,7 @@ export default function CreateRoom() {
       toast({
         title: "❌ Invalid input",
         description:
-          "Please enter a valid wager and complete 4-digit vault code.",
+          "Please enter a valid wager and complete 4-digit sacred code.",
         variant: "destructive",
       });
       return;
@@ -109,8 +109,8 @@ export default function CreateRoom() {
       const vaultNumbers = vaultCode.map(Number);
 
       toast({
-        title: "🏦 Creating vault room...",
-        description: "Encrypting your vault and submitting to blockchain.",
+        title: "🏺 Sealing your tomb...",
+        description: "Locking your sacred code on the ancient blockchain.",
       });
 
       const roomId = await createRoom(vaultNumbers, wager);
@@ -134,29 +134,29 @@ export default function CreateRoom() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black">
-      <MatrixBackground />
+    <div className="relative min-h-screen overflow-hidden desert-bg">
+      <HieroglyphBackground />
 
       <Navbar />
 
       <div className="relative z-10 container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
-          <CyberCard className="p-8">
+          <PapyrusCard className="p-8">
             <div className="space-y-6">
               {/* Header */}
               <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">
-                  ⚡ Create Vault Room ⚡
+                <h1 className="text-3xl font-bold font-egyptian bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  ☥ Seal Your Tomb ☥
                 </h1>
-                <p className="text-muted-foreground">
-                  Set your wager and secure your 4-digit vault code
+                <p className="text-muted-foreground font-serif">
+                  Wager your gold and lock your sacred 4-digit code
                 </p>
               </div>
 
               {/* Wager Input */}
               <div className="space-y-2">
-                <Label htmlFor="wager" className="text-lg font-semibold">
-                  Wager Amount (ETH)
+                <Label htmlFor="wager" className="text-lg font-egyptian font-semibold">
+                  Gold Wager (ETH)
                 </Label>
                 <Input
                   id="wager"
@@ -173,9 +173,9 @@ export default function CreateRoom() {
                 </p>
               </div>
 
-              {/* Vault Code Section */}
+              {/* Tomb Code Section */}
               <div className="space-y-4">
-                <Label className="text-lg font-semibold">Your Vault Code</Label>
+                <Label className="text-lg font-egyptian font-semibold">Your Sacred Code</Label>
 
                 {/* Vault Display */}
                 <VaultDisplay
@@ -183,7 +183,7 @@ export default function CreateRoom() {
                   vaultDigits={vaultCode}
                   masked={false}
                   breachedIndices={[]}
-                  label="Your Vault"
+                  label="Your Tomb"
                 />
 
                 {/* Number Keypad */}
@@ -236,15 +236,15 @@ export default function CreateRoom() {
                 <Button
                   onClick={handleCreateRoom}
                   disabled={!isFormValid || isCreating || isLoading}
-                  className="w-full h-12 text-lg font-bold"
+                  className="w-full h-12 text-lg font-bold btn-egyptian-primary"
                 >
                   {isCreating || isLoading ? (
                     <>
                       <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                      Creating Room...
+                      Sealing Tomb...
                     </>
                   ) : (
-                    "⚡ Create Vault Room ⚡"
+                    "☥ Seal Tomb & Begin Quest ☥"
                   )}
                 </Button>
 
@@ -258,7 +258,7 @@ export default function CreateRoom() {
                 </Button>
               </div>
             </div>
-          </CyberCard>
+          </PapyrusCard>
         </div>
       </div>
 

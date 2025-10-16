@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { X, Zap, Target, Signal, Shield, Eye } from "lucide-react";
+import { X, Zap, Target, Signal, Shield, Eye, Scroll } from "lucide-react";
 
 interface HowToPlayModalProps {
   isOpen: boolean;
@@ -13,12 +13,12 @@ interface HowToPlayModalProps {
 export function HowToPlayModal({ isOpen, onClose, onProceed, showProceedButton = false }: HowToPlayModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-card/95 backdrop-blur-sm border-2 cyber-border border-primary/40 shadow-2xl shadow-primary/20">
+      <DialogContent className="max-w-2xl bg-card/95 backdrop-blur-sm border-2 border-double egyptian-border border-primary/40 shadow-2xl shadow-primary/20">
         <DialogHeader className="relative">
-          <DialogTitle className="text-3xl font-bold text-center font-mono tracking-wider text-primary mb-6 animate-fade-in">
-            <Zap className="inline-block w-8 h-8 text-yellow-400 mr-2 animate-pulse" />
-            How to Breach a Vault
-            <Zap className="inline-block w-8 h-8 text-yellow-400 ml-2 animate-pulse" />
+          <DialogTitle className="text-3xl font-bold text-center font-egyptian tracking-wider text-primary mb-6 animate-fade-in">
+            <Scroll className="inline-block w-8 h-8 text-yellow-400 mr-2 animate-pulse" />
+            The Sacred Challenge
+            <Scroll className="inline-block w-8 h-8 text-yellow-400 ml-2 animate-pulse" />
           </DialogTitle>
           <Button
             variant="ghost"
@@ -32,34 +32,34 @@ export function HowToPlayModal({ isOpen, onClose, onProceed, showProceedButton =
 
         <div className="space-y-6 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-transparent">
           {/* Objective */}
-          <div className="cyber-border rounded-lg p-4 bg-primary/5 border-primary/20 animate-fade-in">
+          <div className="egyptian-border rounded-lg p-4 bg-primary/5 border-primary/20 animate-fade-in">
             <div className="flex items-center gap-2 mb-3">
               <Target className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold text-primary font-mono">OBJECTIVE</h3>
+              <h3 className="text-lg font-semibold text-primary font-egyptian">THE QUEST</h3>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              You and your rival each lock a <span className="text-primary font-mono">4-digit secret vault code</span>.
-              Your mission: <span className="text-accent font-bold">breach their vault</span> before they crack yours.
+            <p className="text-sm text-muted-foreground font-serif leading-relaxed">
+              You and your rival each seal a <span className="text-primary font-egyptian">4-digit sacred code</span>.
+              Your quest: <span className="text-accent font-bold">decipher their tomb</span> before they unlock yours.
             </p>
           </div>
 
           {/* Turns */}
-          <div className="cyber-border rounded-lg p-4 bg-primary/5 border-primary/20 animate-fade-in delay-100">
+          <div className="egyptian-border rounded-lg p-4 bg-primary/5 border-primary/20 animate-fade-in delay-100">
             <div className="flex items-center gap-2 mb-3">
               <Signal className="w-5 h-5 text-accent" />
-              <h3 className="text-lg font-semibold text-accent font-mono">PROBE PROTOCOL</h3>
+              <h3 className="text-lg font-semibold text-accent font-egyptian">EXCAVATION TURNS</h3>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Players take turns launching a <span className="text-accent font-mono">probe</span> (guessing a 4-digit code).
-              After each probe, you'll get <span className="text-primary font-bold">encrypted feedback</span> from the vault's defense system.
+            <p className="text-sm text-muted-foreground font-serif leading-relaxed">
+              Raiders take turns <span className="text-accent font-egyptian">excavating</span> (guessing a 4-digit code).
+              After each dig, you'll receive <span className="text-primary font-bold">ancient hieroglyphic clues</span>.
             </p>
           </div>
 
           {/* Feedback Signals */}
-          <div className="cyber-border rounded-lg p-4 bg-primary/5 border-primary/20 animate-fade-in delay-200">
+          <div className="egyptian-border rounded-lg p-4 bg-primary/5 border-primary/20 animate-fade-in delay-200">
             <div className="flex items-center gap-2 mb-4">
               <Eye className="w-5 h-5 text-yellow-400" />
-              <h3 className="text-lg font-semibold text-yellow-400 font-mono">FEEDBACK SIGNALS</h3>
+              <h3 className="text-lg font-semibold text-yellow-400 font-egyptian">HIEROGLYPHIC CLUES</h3>
             </div>
             
             <div className="space-y-3">
@@ -96,27 +96,27 @@ export function HowToPlayModal({ isOpen, onClose, onProceed, showProceedButton =
           </div>
 
           {/* Winning */}
-          <div className="cyber-border rounded-lg p-4 bg-green-500/10 border-green-500/20 animate-fade-in delay-300">
+          <div className="egyptian-border rounded-lg p-4 bg-green-500/10 border-green-500/20 animate-fade-in delay-300">
             <div className="flex items-center gap-2 mb-3">
               <Shield className="w-5 h-5 text-green-400" />
-              <h3 className="text-lg font-semibold text-green-400 font-mono">WINNING THE BATTLE</h3>
+              <h3 className="text-lg font-semibold text-green-400 font-egyptian">CLAIMING VICTORY</h3>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Keep probing until you fully breach all <span className="text-green-400 font-mono">4 digits</span> of your opponent's vault.
-              The first to crack the full code <span className="text-green-400 font-bold">wins the wager</span> and secures the vault.
+            <p className="text-sm text-muted-foreground font-serif leading-relaxed">
+              Continue excavating until you uncover all <span className="text-green-400 font-egyptian">4 sacred digits</span>.
+              The first to decipher the complete code <span className="text-green-400 font-bold">claims pharaoh's gold</span>.
             </p>
           </div>
 
           {/* Tips */}
-          <div className="cyber-border rounded-lg p-4 bg-accent/10 border-accent/20 animate-fade-in delay-400">
+          <div className="egyptian-border rounded-lg p-4 bg-accent/10 border-accent/20 animate-fade-in delay-400">
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-5 h-5 text-accent" />
-              <h3 className="text-lg font-semibold text-accent font-mono">TACTICAL TIPS</h3>
+              <h3 className="text-lg font-semibold text-accent font-egyptian">ANCIENT WISDOM</h3>
             </div>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Use the feedback to refine your next probe</li>
-              <li>• Track opponent's probes to anticipate their progress</li>
-              <li>• Remember: all 4 digits must be unique in your vault code</li>
+            <ul className="text-sm text-muted-foreground font-serif space-y-1">
+              <li>• Study the hieroglyphic clues to guide your next excavation</li>
+              <li>• Watch your rival's attempts to gauge their progress</li>
+              <li>• Remember: all 4 digits must be unique in your sacred code</li>
             </ul>
           </div>
         </div>
@@ -125,15 +125,15 @@ export function HowToPlayModal({ isOpen, onClose, onProceed, showProceedButton =
           {showProceedButton && onProceed ? (
             <Button
               onClick={onProceed}
-              className="min-w-40 cyber-border bg-primary hover:bg-primary/90 shadow-primary/30 shadow-lg font-mono tracking-wider animate-pulse"
+              className="min-w-40 egyptian-border bg-primary hover:bg-primary/90 shadow-primary/30 shadow-lg font-egyptian tracking-wider animate-pulse"
             >
-              Got it, let's play!
+              Begin the Quest!
             </Button>
           ) : null}
           <Button
             variant="outline"
             onClick={onClose}
-            className="min-w-32 cyber-border border-primary/30 hover:bg-primary/10 font-mono"
+            className="min-w-32 egyptian-border border-primary/30 hover:bg-primary/10 font-serif"
           >
             Close
           </Button>
