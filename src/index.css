@@ -1,0 +1,244 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Cyberpunk Vault Wars Design System - All colors MUST be HSL */
+
+@layer base {
+  :root {
+    /* Core cyberpunk palette */
+    --background: 220 30% 3%;
+    --foreground: 180 100% 90%;
+
+    --card: 220 25% 8%;
+    --card-foreground: 180 100% 90%;
+
+    --popover: 220 25% 8%;
+    --popover-foreground: 180 100% 90%;
+
+    /* Neon teal primary */
+    --primary: 185 100% 50%;
+    --primary-foreground: 220 30% 3%;
+
+    /* Dark secondary with neon accent */
+    --secondary: 220 25% 12%;
+    --secondary-foreground: 185 100% 70%;
+
+    --muted: 220 20% 15%;
+    --muted-foreground: 180 50% 60%;
+
+    /* Neon magenta accent */
+    --accent: 300 100% 50%;
+    --accent-foreground: 220 30% 3%;
+
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 180 100% 90%;
+
+    --border: 185 100% 20%;
+    --input: 220 25% 10%;
+    --ring: 185 100% 50%;
+
+    /* Cyberpunk specific colors */
+    --neon-green: 120 100% 50%;
+    --neon-purple: 270 100% 60%;
+    --neon-pink: 320 100% 70%;
+    --matrix-green: 120 100% 40%;
+    --cyber-blue: 200 100% 60%;
+    
+    /* Glowing effects */
+    --glow-primary: 185 100% 50%;
+    --glow-accent: 300 100% 50%;
+    --glow-success: 120 100% 50%;
+    
+    /* Gradients */
+    --gradient-cyber: linear-gradient(135deg, hsl(185 100% 50%), hsl(270 100% 60%));
+    --gradient-vault: linear-gradient(45deg, hsl(300 100% 50%), hsl(185 100% 50%));
+    --gradient-matrix: linear-gradient(180deg, hsl(220 30% 3%), hsl(220 25% 8%));
+    
+    /* Animations */
+    --transition-glow: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --animation-glitch: glitch 2s infinite;
+    
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Dark mode inherits the cyberpunk theme */
+  .dark {
+    --background: 220 30% 3%;
+    --foreground: 180 100% 90%;
+    --card: 220 25% 8%;
+    --card-foreground: 180 100% 90%;
+    --popover: 220 25% 8%;
+    --popover-foreground: 180 100% 90%;
+    --primary: 185 100% 50%;
+    --primary-foreground: 220 30% 3%;
+    --secondary: 220 25% 12%;
+    --secondary-foreground: 185 100% 70%;
+    --muted: 220 20% 15%;
+    --muted-foreground: 180 50% 60%;
+    --accent: 300 100% 50%;
+    --accent-foreground: 220 30% 3%;
+    --destructive: 0 100% 60%;
+    --destructive-foreground: 180 100% 90%;
+    --border: 185 100% 20%;
+    --input: 220 25% 10%;
+    --ring: 185 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground overflow-x-hidden;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  /* Cyberpunk animations */
+  @keyframes glitch {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-2px); }
+    40% { transform: translateX(2px); }
+    60% { transform: translateX(-1px); }
+    80% { transform: translateX(1px); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 10px hsl(var(--glow-primary) / 0.5); }
+    50% { box-shadow: 0 0 20px hsl(var(--glow-primary) / 0.8), 0 0 30px hsl(var(--glow-primary) / 0.4); }
+  }
+
+  @keyframes matrix-rain {
+    0% { transform: translateY(-100vh); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+  }
+
+  @keyframes code-scroll {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* Utility classes */
+  .glow-primary {
+    box-shadow: 0 0 15px hsl(var(--glow-primary) / 0.6);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 15px hsl(var(--glow-accent) / 0.6);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 15px hsl(var(--glow-success) / 0.6);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .cyber-border {
+    border: 1px solid hsl(var(--primary) / 0.5);
+    background: linear-gradient(45deg, transparent, hsl(var(--primary) / 0.1), transparent);
+  }
+
+  .matrix-bg {
+    background: var(--gradient-matrix);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .matrix-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(1px 1px at 20px 30px, hsl(var(--neon-green) / 0.3), transparent),
+      radial-gradient(1px 1px at 40px 70px, hsl(var(--primary) / 0.2), transparent),
+      radial-gradient(2px 2px at 90px 40px, hsl(var(--accent) / 0.2), transparent);
+    background-size: 100px 100px;
+    animation: matrix-rain 20s linear infinite;
+  }
+}
+
+@layer components {
+  /* Cyberpunk button variants */
+  .btn-cyber {
+    @apply relative overflow-hidden bg-transparent border border-primary text-primary font-mono uppercase tracking-wider;
+    @apply hover:bg-primary hover:text-primary-foreground hover:shadow-lg;
+    @apply transition-all duration-300 ease-out;
+    @apply before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-primary/20 before:to-transparent;
+    @apply before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-500;
+  }
+
+  .btn-cyber-primary {
+    @apply btn-cyber border-primary text-primary hover:bg-primary hover:text-background glow-primary;
+  }
+
+  .btn-cyber-accent {
+    @apply btn-cyber border-accent text-accent hover:bg-accent hover:text-background glow-accent;
+  }
+
+  .btn-cyber-success {
+    @apply btn-cyber border-neon-green text-neon-green hover:bg-neon-green hover:text-background;
+    box-shadow: 0 0 15px hsl(var(--neon-green) / 0.4);
+  }
+
+  /* Cyberpunk input styles */
+  .input-cyber {
+    @apply bg-card/50 border border-primary/30 text-foreground placeholder:text-muted-foreground;
+    @apply focus:border-primary focus:ring-2 focus:ring-primary/20 focus:shadow-lg;
+    @apply transition-all duration-300 cyber-border;
+  }
+
+  /* Cyberpunk card styles */
+  .card-cyber {
+    @apply bg-card/80 backdrop-blur-sm border border-primary/30 cyber-border;
+    @apply hover:border-primary/60 transition-all duration-300;
+  }
+
+  /* Glitch text effect */
+  .text-glitch {
+    @apply relative text-primary font-mono uppercase tracking-wider;
+    animation: var(--animation-glitch);
+  }
+
+  .text-glitch::before,
+  .text-glitch::after {
+    content: attr(data-text);
+    @apply absolute top-0 left-0 w-full h-full;
+  }
+
+  .text-glitch::before {
+    @apply text-accent;
+    clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+    transform: translateX(-2px);
+  }
+
+  .text-glitch::after {
+    @apply text-neon-green;
+    clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+    transform: translateX(2px);
+  }
+}
