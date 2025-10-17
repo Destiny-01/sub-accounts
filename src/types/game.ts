@@ -18,7 +18,7 @@ export interface RoomState {
   wager: string;
   guesses: Guess[];
   playerVault: string[];
-  gameStatus: 'waiting' | 'active' | 'completed';
+  gameStatus: "waiting" | "active" | "completed";
   winner?: string;
 }
 
@@ -32,4 +32,12 @@ export interface ResultPosted {
   };
   resultCipher: string;
   signature: string;
+}
+
+// Room phase enum
+export enum RoomPhase {
+  WAITING_FOR_JOIN = 0,
+  IN_PROGRESS = 1,
+  COMPLETED = 2,
+  CANCELLED = 3,
 }

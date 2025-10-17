@@ -10,12 +10,13 @@ import VaultDisplay from "@/components/game/VaultDisplay";
 import { Navbar } from "@/components/layout/Navbar";
 import { ConnectWalletModal } from "@/components/wallet/ConnectWalletModal";
 import { HowToPlayModal } from "@/components/modals/HowToPlayModal";
-import { RoomPhase, type RoomMetadata } from "@/contexts/TombSecretsProvider";
+import { type RoomMetadata } from "@/contexts/TombSecretsProvider";
 import { useContractEvents } from "@/services/eventHandler";
 import { useToast } from "@/hooks/use-toast";
 import { Home, Shuffle, Loader2, AlertCircle, Check } from "lucide-react";
 import { useTombSecret } from "@/hooks/useTombSecrets";
 import { formatEther, parseEther } from "ethers";
+import { RoomPhase } from "@/types/game";
 
 export default function JoinRoom() {
   const navigate = useNavigate();

@@ -1,8 +1,4 @@
-import {
-  SubAccount,
-  RoomMetadata,
-  RoomPhase,
-} from "@/contexts/TombSecretsProvider";
+import { SubAccount, RoomMetadata } from "@/contexts/TombSecretsProvider";
 import { ProviderInterface } from "@base-org/account";
 import { Contract } from "ethers";
 import { createContext, useContext } from "react";
@@ -18,6 +14,8 @@ interface TombSecretContextValue {
   status: string;
   isProviderReady: boolean;
   playerWins: number;
+  balance: string;
+  isLoadingBalance: boolean;
 
   connectWallet: () => Promise<void>;
   createSubAccount: () => Promise<void>;
@@ -30,6 +28,7 @@ interface TombSecretContextValue {
     wager: string
   ) => Promise<string | null>;
   sendCallsFromUniversal: () => Promise<void>;
+  disconnectWallet: () => void;
 }
 
 // ✅ Custom hook for easy consumption

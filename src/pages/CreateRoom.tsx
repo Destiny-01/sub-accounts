@@ -18,7 +18,7 @@ import { useTombSecret } from "@/hooks/useTombSecrets";
 
 export default function CreateRoom() {
   const navigate = useNavigate();
-  const { address, isConnected } = useAccount();
+  const { address } = useAccount();
   const { toast } = useToast();
 
   // Contract integration with event handlers
@@ -70,7 +70,7 @@ export default function CreateRoom() {
   };
 
   const isVaultComplete = vaultCode.every((digit) => digit !== "");
-  const MIN_WAGER = 0.0001;
+  const MIN_WAGER = 0.001;
   const isWagerValid = wager !== "" && parseFloat(wager) >= MIN_WAGER;
   const isFormValid = isVaultComplete && isWagerValid;
 
@@ -78,11 +78,6 @@ export default function CreateRoom() {
     // Show How to Play modal first if user clicked create room directly
     if (showHowToPlay) {
       setShowHowToPlay(true);
-      return;
-    }
-
-    if (!isConnected) {
-      setShowConnectModal(true);
       return;
     }
 

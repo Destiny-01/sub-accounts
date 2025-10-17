@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import TombIcon from "@/components/TombIcon";
 import { WalletButton } from "@/components/wallet/WalletButton";
+import { WalletDisplay } from "@/components/wallet/WalletDisplay";
 import { HowToPlayModal } from "@/components/modals/HowToPlayModal";
 import { HelpCircle } from "lucide-react";
 import { useTombSecret } from "@/hooks/useTombSecrets";
@@ -37,9 +38,7 @@ export function Navbar() {
               </Button>
             </nav>
             {connected ? (
-              <div>
-                <p>{subAccount?.address}</p>
-              </div>
+              <WalletDisplay />
             ) : (
               <Button
                 onClick={connectWallet}

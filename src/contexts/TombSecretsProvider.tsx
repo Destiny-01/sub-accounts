@@ -11,14 +11,7 @@ import {
 } from "ethers";
 import { ABI } from "@/lib/abi";
 import { formatEther } from "ethers";
-
-// Room phase enum
-export enum RoomPhase {
-  WAITING_FOR_JOIN = 0,
-  IN_PROGRESS = 1,
-  COMPLETED = 2,
-  CANCELLED = 3,
-}
+import { RoomPhase } from "@/types/game";
 
 // Enhanced room metadata type
 export interface RoomMetadata {
@@ -80,6 +73,8 @@ export const TombSecretProvider = ({
   const [status, setStatus] = useState("");
   const [isProviderReady, setIsProviderReady] = useState(false);
   const [playerWins, setPlayerWins] = useState(0);
+  const [balance, setBalance] = useState<string>("0");
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
   // Initialize SDK
   useEffect(() => {
@@ -164,6 +159,40 @@ export const TombSecretProvider = ({
 
     autoConnect();
   }, [provider, connected]);
+
+  // Fetch balance when subAccount changes
+  useEffect(() => {
+    if (subAccount?.address) {
+      const fetchBalanceEffect = async () => {
+        console.log("start fetch");
+        if (!provider || !subAccount?.address) {
+          setBalance("0");
+          return;
+        }
+
+        setIsLoadingBalance(true);
+        try {
+          console.log(subAccount.address);
+          const balanceHex = await provider.request({
+            method: "eth_getBalance",
+            params: [subAccount.address, "latest"],
+          });
+          console.log(balanceHex);
+
+          const balanceWei = BigInt(String(balanceHex));
+          const balanceEth = formatEther(balanceWei);
+          setBalance(parseFloat(balanceEth).toFixed(3));
+        } catch (error) {
+          console.error("Failed to fetch balance:", error);
+          setBalance("0");
+        } finally {
+          setIsLoadingBalance(false);
+        }
+      };
+
+      fetchBalanceEffect();
+    }
+  }, [subAccount?.address, provider]);
 
   const createSubAccount = async () => {
     if (!provider) {
@@ -337,23 +366,6 @@ export const TombSecretProvider = ({
     }
   }
 
-  const sendCallsFromTombSecret = useCallback(async () => {
-    if (!subAccount) {
-      setStatus("Sub account not available");
-      return;
-    }
-
-    const calls = [
-      {
-        to: "0x4bbfd120d9f352a0bed7a014bd67913a2007a878",
-        data: "0x9846cd9e",
-        value: "0x0",
-      },
-    ];
-
-    await sendCalls(calls, subAccount.address, setLoadingTombSecret);
-  }, [sendCalls, subAccount]);
-
   const createRoom = useCallback(
     async (vaultCode: number[], wager: string) => {
       if (!subAccount || !contract || !isProviderReady) {
@@ -364,73 +376,6 @@ export const TombSecretProvider = ({
       try {
         setIsLoading(true);
         setStatus("Creating room...");
-
-        // COMMENTED OUT: Previous implementation using sendCalls
-        // // Use contract instance to encode function data
-        // const data = contract.interface.encodeFunctionData("createRoom", [
-        //   vaultCode,
-        // ]);
-        // console.log(contractAddress, subAccount.address);
-
-        // const calls = [
-        //   {
-        //     to: contractAddress,
-        //     data,
-        //     value: `0x${parseEther(wager).toString(16)}`,
-        //   },
-        // ];
-
-        // const txId = await sendCalls(calls, subAccount.address, setIsLoading);
-
-        // if (!txId) {
-        //   throw new Error("Transaction failed");
-        // }
-
-        // setStatus("Transaction submitted, waiting for confirmation...");
-
-        // // Get transaction receipt
-        // const receipt = await provider.request({
-        //   method: "eth_getTransactionReceipt",
-        //   params: [txId],
-        // });
-
-        // console.log("Transaction receipt:", receipt);
-
-        // // Parse RoomCreated event from logs using contract instance
-        // const roomCreatedEvent = (receipt as TransactionReceipt)?.logs?.find(
-        //   (log) => {
-        //     try {
-        //       const parsedLog = contract.interface.parseLog(log);
-        //       return parsedLog?.name === "RoomCreated";
-        //     } catch {
-        //       return false;
-        //     }
-        //   }
-        // );
-
-        // if (roomCreatedEvent) {
-        //   const parsedEvent = contract.interface.parseLog(roomCreatedEvent);
-        //   const roomId = parsedEvent?.args.roomId.toString();
-        //   const creator = parsedEvent?.args.creator;
-        //   const wagerAmount = parsedEvent?.args.wager.toString();
-        //   const token = parsedEvent?.args.token;
-
-        //   console.log("RoomCreated event:", {
-        //     roomId,
-        //     creator,
-        //     wagerAmount,
-        //     token,
-        //   });
-
-        //   setStatus(`Room created successfully! Room ID: ${roomId}`);
-        //   return roomId;
-        // } else {
-        //   setStatus("Room created but event not found");
-        //   return null;
-        // }
-
-        // NEW IMPLEMENTATION: Direct ethers contract call
-        setStatus("Submitting transaction...");
 
         // Encode the function call data
         const data = contract.interface.encodeFunctionData("createRoom", [
@@ -528,69 +473,6 @@ export const TombSecretProvider = ({
       try {
         setIsLoading(true);
         setStatus("Joining room...");
-
-        // COMMENTED OUT: Previous implementation using sendCalls
-        // // Use contract instance to encode function data
-        // const data = contract.interface.encodeFunctionData("joinRoom", [
-        //   BigInt(roomId),
-        //   vaultCode,
-        // ]);
-        // console.log(contractAddress, subAccount.address);
-
-        // const calls = [
-        //   {
-        //     to: contractAddress,
-        //     data,
-        //     value: `0x${parseEther(wager).toString(16)}`,
-        //   },
-        // ];
-
-        // const txId = await sendCalls(calls, subAccount.address, setIsLoading);
-
-        // if (!txId) {
-        //   throw new Error("Transaction failed");
-        // }
-
-        // setStatus("Transaction submitted, waiting for confirmation...");
-
-        // // Get transaction receipt
-        // const receipt = await provider.request({
-        //   method: "eth_getTransactionReceipt",
-        //   params: [txId],
-        // });
-
-        // console.log("Transaction receipt:", receipt);
-
-        // // Parse RoomJoined event from logs using contract instance
-        // const roomJoinedEvent = (receipt as TransactionReceipt)?.logs?.find(
-        //   (log) => {
-        //     try {
-        //       const parsedLog = contract.interface.parseLog(log);
-        //       return parsedLog?.name === "RoomJoined";
-        //     } catch {
-        //       return false;
-        //     }
-        //   }
-        // );
-
-        // if (roomJoinedEvent) {
-        //   const parsedEvent = contract.interface.parseLog(roomJoinedEvent);
-        //   const roomId = parsedEvent?.args.roomId.toString();
-        //   const opponent = parsedEvent?.args.opponent;
-
-        //   console.log("RoomJoined event:", {
-        //     roomId,
-        //     opponent,
-        //   });
-
-        //   setStatus(`Joined room successfully! Room ID: ${roomId}`);
-        //   return roomId;
-        // } else {
-        //   setStatus("Room joined but event not found");
-        //   return null;
-        // }
-
-        // NEW IMPLEMENTATION: Direct ethers contract call
         setStatus("Submitting transaction...");
 
         // Encode the function call data
@@ -693,6 +575,20 @@ export const TombSecretProvider = ({
     await sendCalls(calls, universalAddress, setLoadingUniversal);
   }, [sendCalls, universalAddress]);
 
+  const disconnectWallet = useCallback(() => {
+    // Reset all wallet-related states
+    setSubAccount(null);
+    setUniversalAddress("");
+    setConnected(false);
+    setIsLoading(false);
+    setLoadingTombSecret(false);
+    setLoadingUniversal(false);
+    setStatus("Disconnected");
+    setPlayerWins(0);
+    setBalance("0");
+    setIsLoadingBalance(false);
+  }, []);
+
   return (
     <TombSecretContext.Provider
       value={{
@@ -706,6 +602,8 @@ export const TombSecretProvider = ({
         status,
         isProviderReady,
         playerWins,
+        balance,
+        isLoadingBalance,
         connectWallet,
         createSubAccount,
         getRoom,
@@ -713,6 +611,7 @@ export const TombSecretProvider = ({
         createRoom,
         joinRoom,
         sendCallsFromUniversal,
+        disconnectWallet,
       }}
     >
       {children}
