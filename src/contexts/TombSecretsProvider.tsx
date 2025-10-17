@@ -676,6 +676,73 @@ export const TombSecretProvider = ({
     [contract, subAccount, provider, isProviderReady]
   );
 
+  const submitGuess = useCallback(
+    async (roomId: string, guess: number[]): Promise<string> => {
+      if (!subAccount || !contract || !isProviderReady) {
+        setStatus("Sub account, contract, or provider not ready");
+        throw new Error("Sub account, contract, or provider not ready");
+      }
+
+      try {
+        setIsLoading(true);
+        setStatus("Submitting guess...");
+
+        // Encode the function call data
+        const data = contract.interface.encodeFunctionData("submitGuess", [
+          BigInt(roomId),
+          guess,
+        ]);
+
+        // Send transaction using provider
+        const txHash = (await provider.request({
+          method: "eth_sendTransaction",
+          params: [
+            {
+              to: contractAddress,
+              data,
+              value: "0x0",
+              from: subAccount.address,
+            },
+          ],
+        })) as string;
+
+        setStatus("Guess submitted, waiting for confirmation...");
+
+        // Wait for transaction receipt
+        let receipt;
+        let attempts = 0;
+        const maxAttempts = 30;
+
+        while (attempts < maxAttempts) {
+          receipt = await provider.request({
+            method: "eth_getTransactionReceipt",
+            params: [txHash],
+          });
+
+          if (receipt) break;
+
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          attempts++;
+        }
+
+        if (!receipt) {
+          throw new Error("Transaction receipt not found after timeout");
+        }
+
+        console.log("Guess submitted:", receipt);
+        setStatus("Guess submitted successfully!");
+        return txHash;
+      } catch (error) {
+        console.error("Error submitting guess:", error);
+        setStatus("Failed to submit guess");
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [contract, subAccount, provider, isProviderReady]
+  );
+
   const sendCallsFromUniversal = useCallback(async () => {
     if (!universalAddress) {
       setStatus("Universal account not available");
@@ -712,6 +779,7 @@ export const TombSecretProvider = ({
         setIsLoading,
         createRoom,
         joinRoom,
+        submitGuess,
         sendCallsFromUniversal,
       }}
     >

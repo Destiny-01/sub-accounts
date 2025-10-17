@@ -29,6 +29,7 @@ interface TombSecretContextValue {
     vaultCode: number[],
     wager: string
   ) => Promise<string | null>;
+  submitGuess: (roomId: string, guess: number[]) => Promise<string>;
   sendCallsFromUniversal: () => Promise<void>;
 }
 
