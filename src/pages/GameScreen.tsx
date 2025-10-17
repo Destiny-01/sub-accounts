@@ -1,71 +1,36 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import MatrixBackground from "@/components/MatrixBackground";
 import { Navbar } from "@/components/layout/Navbar";
 import { HowToPlayModal } from "@/components/modals/HowToPlayModal";
 import PrivacyConsole from "@/components/game/PrivacyConsole";
-import { useVaultWarsContract } from "@/hooks/useVaultWarsContract";
+import { RoomMetadata } from "@/contexts/TombSecretsProvider";
 import { useContractEvents } from "@/services/eventHandler";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Loader2, HelpCircle } from "lucide-react";
+import { useTombSecret } from "@/hooks/useTombSecrets";
+
+interface GuessData {
+  turnIndex: number;
+  digits: string[];
+  result?: {
+    breached: number;
+    injured: number;
+  };
+  timestamp: number;
+}
 
 export default function GameScreen() {
   const navigate = useNavigate();
   const { roomId } = useParams();
   const { toast } = useToast();
 
+  const { getRoom, isProviderReady } = useTombSecret();
+
   // State for room data
-  const [roomData, setRoomData] = useState<any>(null);
+  const [roomData, setRoomData] = useState<RoomMetadata | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Contract integration with comprehensive event handlers
-  const eventHandlers = useContractEvents({
-    onProbeSubmitted: (event) => {
-      // Handle probe submissions and update UI accordingly
-      setSelectedDigits(["", "", "", ""]);
-      setIsSubmitting(false);
-      toast({
-        title: "🔍 Probe submitted",
-        description: "Analyzing vault defenses...",
-      });
-    },
-    onResultComputed: (event) => {
-      // Handle FHE computation results
-      if (event.signedResult) {
-        toast({
-          title: "📊 Probe analyzed",
-          description: `${event.signedResult.breaches}B ${event.signedResult.signals}S`,
-        });
-
-        // Check for win condition
-        if (event.signedResult.breaches >= 4) {
-          setGameEndModal({
-            isOpen: true,
-            outcome: "won",
-            claimed: false,
-          });
-        }
-      }
-    },
-    onWinnerDecrypted: (event) => {
-      setGameEndModal({
-        isOpen: true,
-        outcome: "won",
-        claimed: false,
-      });
-    },
-    onGameFinished: (event) => {
-      toast({
-        title: "🎉 Game completed!",
-        description: `Payout: ${event.amount} ETH`,
-      });
-
-      setTimeout(() => navigate("/"), 3000);
-    },
-  });
-
-  const contract = useVaultWarsContract(eventHandlers);
 
   const [gameEndModal, setGameEndModal] = useState<{
     isOpen: boolean;
@@ -81,14 +46,19 @@ export default function GameScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
+  // Real game data from contract
+  const [playerGuesses, setPlayerGuesses] = useState<GuessData[]>([]);
+  const [opponentGuesses, setOpponentGuesses] = useState<GuessData[]>([]);
+
   // Load room data on mount
   useEffect(() => {
     const loadRoomData = async () => {
-      if (!roomId || !contract.contract) return;
-      
+      if (!roomId || !isProviderReady) return;
+
       try {
         setLoading(true);
-        const data = await contract.getRoom(roomId);
+        const data = await getRoom(Number(roomId));
+        console.log(data);
         if (!data) {
           toast({
             title: "❌ Room not found",
@@ -97,7 +67,7 @@ export default function GameScreen() {
           });
           navigate("/");
         } else {
-          setRoomData(data);
+          setRoomData(data as RoomMetadata);
         }
       } catch (error) {
         console.error("Failed to load room:", error);
@@ -112,7 +82,7 @@ export default function GameScreen() {
     };
 
     loadRoomData();
-  }, [roomId, contract.contract, toast, navigate]);
+  }, [roomId, getRoom, toast, navigate, isProviderReady]);
 
   const handleDigitSelect = (digit: string) => {
     const emptyIndex = selectedDigits.findIndex((d) => !d);
@@ -138,7 +108,7 @@ export default function GameScreen() {
     setSelectedDigits(["", "", "", ""]);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (selectedDigits.some((digit) => !digit)) {
       toast({
         title: "Incomplete guess",
@@ -187,7 +157,7 @@ export default function GameScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [selectedDigits, playerGuesses.length, toast]);
 
   const handleReturnHome = () => {
     navigate("/");
@@ -213,10 +183,6 @@ export default function GameScreen() {
   // Determine game state - force player turn for testing
   const isPlayerTurn = true;
 
-  // Real game data from contract
-  const [playerGuesses, setPlayerGuesses] = useState<any[]>([]);
-  const [opponentGuesses, setOpponentGuesses] = useState<any[]>([]);
-
   const isComplete = selectedDigits.every((digit) => digit !== "");
   const canSubmit = isComplete && !isSubmitting && isPlayerTurn;
 
@@ -230,19 +196,24 @@ export default function GameScreen() {
 
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [canSubmit]);
+  }, [canSubmit, handleSubmit]);
 
   const getPhaseText = (phase: number) => {
     switch (phase) {
-      case 0: return "Waiting for opponent";
-      case 1: return "Battle in progress";
-      case 2: return "Battle completed";
-      case 3: return "Room cancelled";
-      default: return "Unknown status";
+      case 0:
+        return "Waiting for opponent";
+      case 1:
+        return "Battle in progress";
+      case 2:
+        return "Battle completed";
+      case 3:
+        return "Room cancelled";
+      default:
+        return "Unknown status";
     }
   };
 
-  if (loading || !roomData) {
+  if (loading || !roomData || !isProviderReady) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 relative overflow-hidden">
         <Navbar />
@@ -251,7 +222,9 @@ export default function GameScreen() {
           <div className="text-center">
             <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
             <p className="text-lg text-primary font-mono">
-              Loading battle arena...
+              {!isProviderReady
+                ? "Initializing provider..."
+                : "Loading battle arena..."}
             </p>
           </div>
         </div>

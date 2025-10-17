@@ -1,14 +1,14 @@
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useBalance } from 'wagmi';
-import { useVaultWarsContract } from '@/hooks/useVaultWarsContract';
-import { ChevronDown, ExternalLink, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount, useBalance } from "wagmi";
+import { useTombSecret } from "@/hooks/useTombSecrets";
+import { ChevronDown, ExternalLink, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 export function WalletButton() {
   return (
@@ -22,22 +22,21 @@ export function WalletButton() {
         authenticationStatus,
         mounted,
       }) => {
-        const ready = mounted && authenticationStatus !== 'loading';
+        const ready = mounted && authenticationStatus !== "loading";
         const connected =
           ready &&
           account &&
           chain &&
-          (!authenticationStatus ||
-            authenticationStatus === 'authenticated');
+          (!authenticationStatus || authenticationStatus === "authenticated");
 
         return (
           <div
             {...(!ready && {
-              'aria-hidden': true,
-              'style': {
+              "aria-hidden": true,
+              style: {
                 opacity: 0,
-                pointerEvents: 'none',
-                userSelect: 'none',
+                pointerEvents: "none",
+                userSelect: "none",
               },
             })}
           >
@@ -66,13 +65,13 @@ export function WalletButton() {
 function ConnectedWalletDisplay({ account }: { account: any }) {
   const { address } = useAccount();
   const { data: balance } = useBalance({ address });
-  const { playerWins } = useVaultWarsContract();
+  const { playerWins } = useTombSecret();
 
-  const formatAddress = (addr: string) => 
+  const formatAddress = (addr: string) =>
     `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
-  const formatBalance = (bal: any) => 
-    bal ? `${parseFloat(bal.formatted).toFixed(3)} ${bal.symbol}` : '0.000 ETH';
+  const formatBalance = (bal: any) =>
+    bal ? `${parseFloat(bal.formatted).toFixed(3)} ${bal.symbol}` : "0.000 ETH";
 
   return (
     <DropdownMenu>
@@ -92,12 +91,17 @@ function ConnectedWalletDisplay({ account }: { account: any }) {
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align="end" 
+      <DropdownMenuContent
+        align="end"
         className="w-56 bg-background border-primary/20"
       >
         <DropdownMenuItem
-          onClick={() => window.open(`https://etherscan.io/address/${account.address}`, '_blank')}
+          onClick={() =>
+            window.open(
+              `https://etherscan.io/address/${account.address}`,
+              "_blank"
+            )
+          }
           className="cursor-pointer hover:bg-primary/10"
         >
           <ExternalLink className="mr-2 h-4 w-4" />

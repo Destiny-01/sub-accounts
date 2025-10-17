@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAccount } from "wagmi";
 import { Button } from "@/components/ui/button";
@@ -10,11 +10,13 @@ import VaultDisplay from "@/components/game/VaultDisplay";
 import { Navbar } from "@/components/layout/Navbar";
 import { ConnectWalletModal } from "@/components/wallet/ConnectWalletModal";
 import { HowToPlayModal } from "@/components/modals/HowToPlayModal";
-import { useVaultWarsContract, RoomPhase, type RoomMetadata } from "@/hooks/useVaultWarsContract";
+import { RoomPhase, type RoomMetadata } from "@/contexts/TombSecretsProvider";
 import { useContractEvents } from "@/services/eventHandler";
 import { useToast } from "@/hooks/use-toast";
 import { Home, Shuffle, Loader2, AlertCircle, Check } from "lucide-react";
 import { initializeFHE } from "@/lib/fhe";
+import { useTombSecret } from "@/hooks/useTombSecrets";
+import { formatEther, parseEther } from "ethers";
 
 export default function JoinRoom() {
   const navigate = useNavigate();
@@ -26,10 +28,11 @@ export default function JoinRoom() {
   const eventHandlers = useContractEvents({
     onRoomJoined: (event) => {
       if (event.opponent.toLowerCase() === address?.toLowerCase()) {
-      toast({
-        title: "⚔️ The duel begins!",
-        description: "Successfully joined the expedition. May the gods favor you!",
-      });
+        toast({
+          title: "⚔️ The duel begins!",
+          description:
+            "Successfully joined the expedition. May the gods favor you!",
+        });
 
         // Navigate to game screen with room details
         navigate(
@@ -39,8 +42,12 @@ export default function JoinRoom() {
     },
   });
 
-  const { joinRoom, getRoom, isLoading } =
-    useVaultWarsContract(eventHandlers);
+  const {
+    joinRoom: tombJoinRoom,
+    getRoom,
+    isProviderReady,
+    isLoading,
+  } = useTombSecret();
 
   const [roomId, setRoomId] = useState("");
   const [vaultCode, setVaultCode] = useState<string[]>(["", "", "", ""]);
@@ -54,6 +61,85 @@ export default function JoinRoom() {
     isChecking: boolean;
     error?: string;
   }>({ isValid: false, isChecking: false });
+
+  // Check room validity function
+  const checkRoomValidity = useCallback(
+    async (roomIdToCheck: string) => {
+      if (!roomIdToCheck.trim()) {
+        setRoomValidation({ isValid: false, isChecking: false });
+        setRoomData(null);
+        return;
+      }
+
+      setRoomValidation({ isValid: false, isChecking: true });
+
+      try {
+        const room: RoomMetadata = await getRoom(Number(roomIdToCheck));
+
+        console.log(room.wager);
+        if (!room) {
+          setRoomValidation({
+            isValid: false,
+            isChecking: false,
+            error: "Room not found",
+          });
+          setRoomData(null);
+          return;
+        }
+
+        // Check if room.creator is a valid address (not zero address)
+        if (room.creator === "0x0000000000000000000000000000000000000000") {
+          setRoomValidation({
+            isValid: false,
+            isChecking: false,
+            error: "Invalid room",
+          });
+          setRoomData(null);
+          return;
+        }
+
+        // Check room phase - only allow joining if waiting for join
+        if (Number(room.phase) !== RoomPhase.WAITING_FOR_JOIN) {
+          const phaseText =
+            Number(room.phase) === RoomPhase.IN_PROGRESS
+              ? "in progress"
+              : Number(room.phase) === RoomPhase.COMPLETED
+              ? "completed"
+              : "cancelled";
+          setRoomValidation({
+            isValid: false,
+            isChecking: false,
+            error: `Room is ${phaseText}`,
+          });
+          setRoomData(null);
+          return;
+        }
+
+        // Check if user is trying to join their own room
+        if (room.creator.toLowerCase() === address?.toLowerCase()) {
+          setRoomValidation({
+            isValid: false,
+            isChecking: false,
+            error: "Cannot join your own room",
+          });
+          setRoomData(null);
+          return;
+        }
+
+        setRoomValidation({ isValid: true, isChecking: false });
+        setRoomData(room);
+      } catch (error) {
+        console.error("Error checking room:", error);
+        setRoomValidation({
+          isValid: false,
+          isChecking: false,
+          error: "Failed to check room",
+        });
+        setRoomData(null);
+      }
+    },
+    [getRoom, address]
+  );
 
   // Initialize crypto on component mount
   useEffect(() => {
@@ -77,78 +163,7 @@ export default function JoinRoom() {
       setShowInviteMessage(true);
       checkRoomValidity(urlRoomId);
     }
-  }, [searchParams]);
-
-  // Check room validity function
-  const checkRoomValidity = async (roomIdToCheck: string) => {
-    if (!roomIdToCheck.trim()) {
-      setRoomValidation({ isValid: false, isChecking: false });
-      setRoomData(null);
-      return;
-    }
-
-    setRoomValidation({ isValid: false, isChecking: true });
-
-    try {
-      const room = await getRoom(roomIdToCheck);
-      
-      if (!room) {
-        setRoomValidation({
-          isValid: false,
-          isChecking: false,
-          error: "Room not found"
-        });
-        setRoomData(null);
-        return;
-      }
-
-      // Check if room.creator is a valid address (not zero address)
-      if (room.creator === "0x0000000000000000000000000000000000000000") {
-        setRoomValidation({
-          isValid: false,
-          isChecking: false,
-          error: "Invalid room"
-        });
-        setRoomData(null);
-        return;
-      }
-
-      // Check room phase - only allow joining if waiting for join
-      if (room.phase !== RoomPhase.WAITING_FOR_JOIN) {
-        const phaseText = room.phase === RoomPhase.IN_PROGRESS ? "in progress" : 
-                         room.phase === RoomPhase.COMPLETED ? "completed" : "cancelled";
-        setRoomValidation({
-          isValid: false,
-          isChecking: false,
-          error: `Room is ${phaseText}`
-        });
-        setRoomData(null);
-        return;
-      }
-
-      // Check if user is trying to join their own room
-      if (room.creator.toLowerCase() === address?.toLowerCase()) {
-        setRoomValidation({
-          isValid: false,
-          isChecking: false,
-          error: "Cannot join your own room"
-        });
-        setRoomData(null);
-        return;
-      }
-
-      setRoomValidation({ isValid: true, isChecking: false });
-      setRoomData(room);
-    } catch (error) {
-      console.error("Error checking room:", error);
-      setRoomValidation({
-        isValid: false,
-        isChecking: false,
-        error: "Failed to check room"
-      });
-      setRoomData(null);
-    }
-  };
+  }, [searchParams, checkRoomValidity]);
 
   // Check room validity when roomId changes
   useEffect(() => {
@@ -157,7 +172,7 @@ export default function JoinRoom() {
     }, 500); // Debounce
 
     return () => clearTimeout(timeoutId);
-  }, [roomId, address]);
+  }, [roomId, address, checkRoomValidity]);
 
   const handleVaultCodeChange = (index: number, value: string) => {
     if (value === "" || (/^\d$/.test(value) && !vaultCode.includes(value))) {
@@ -188,15 +203,10 @@ export default function JoinRoom() {
       return;
     }
 
-    if (!isConnected) {
-      setShowConnectModal(true);
-      return;
-    }
-
     if (!isFormValid) {
       toast({
         title: "❌ Invalid input",
-        description: !roomValidation.isValid 
+        description: !roomValidation.isValid
           ? `Chamber issue: ${roomValidation.error || "Invalid chamber"}`
           : "Please complete your 4-digit sacred code.",
         variant: "destructive",
@@ -215,10 +225,17 @@ export default function JoinRoom() {
       // Convert string array to number array
       const vaultNumbers = vaultCode.map(Number);
 
-      await joinRoom(roomId, vaultNumbers, roomData!.wager);
+      const joinedRoomId = await tombJoinRoom(
+        roomId,
+        vaultNumbers,
+        formatEther(roomData!.wager)
+      );
 
-      // Navigation will be handled by event handler
-    } catch (error: any) {
+      if (joinedRoomId) {
+        // Redirect to game page immediately
+        navigate(`/game/${joinedRoomId}`);
+      }
+    } catch (error: unknown) {
       console.error("Failed to join room:", error);
       // Error toast already shown by contract hook
     } finally {
@@ -257,7 +274,10 @@ export default function JoinRoom() {
 
               {/* Room ID Input */}
               <div className="space-y-2">
-                <Label htmlFor="roomId" className="text-lg font-egyptian font-semibold">
+                <Label
+                  htmlFor="roomId"
+                  className="text-lg font-egyptian font-semibold"
+                >
                   Chamber ID
                 </Label>
                 <div className="relative">
@@ -273,13 +293,13 @@ export default function JoinRoom() {
                   {roomValidation.isChecking && (
                     <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
                   )}
-                  {!roomValidation.isChecking && roomId && (
-                    roomValidation.isValid ? (
+                  {!roomValidation.isChecking &&
+                    roomId &&
+                    (roomValidation.isValid ? (
                       <Check className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-500" />
                     ) : (
                       <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500" />
-                    )
-                  )}
+                    ))}
                 </div>
                 {roomValidation.error && !roomValidation.isChecking && (
                   <p className="text-sm text-red-500">{roomValidation.error}</p>
@@ -289,24 +309,36 @@ export default function JoinRoom() {
               {/* Chamber Details */}
               {roomData && roomValidation.isValid && (
                 <div className="bg-primary/10 border-2 border-double border-primary/30 rounded-lg p-4 space-y-3 egyptian-border">
-                  <h3 className="font-egyptian font-semibold text-primary">Chamber Details</h3>
+                  <h3 className="font-egyptian font-semibold text-primary">
+                    Chamber Details
+                  </h3>
                   <div className="space-y-2 text-sm font-serif">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Tomb Keeper:</span>
-                      <span className="font-mono text-xs">{roomData.creator.slice(0, 6)}...{roomData.creator.slice(-4)}</span>
+                      <span className="text-muted-foreground">
+                        Tomb Keeper:
+                      </span>
+                      <span className="font-mono text-xs">
+                        {roomData.creator.slice(0, 6)}...
+                        {roomData.creator.slice(-4)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Gold Wager:</span>
-                      <span className="font-semibold">{roomData.wager} ETH</span>
+                      <span className="font-semibold">
+                        {formatEther(roomData.wager)} ETH
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Status:</span>
-                      <span className="text-yellow-500">Awaiting challenger</span>
+                      <span className="text-yellow-500">
+                        Awaiting challenger
+                      </span>
                     </div>
                   </div>
                   <div className="bg-yellow-500/10 border-2 border-double border-yellow-500/30 rounded p-3 mt-3">
                     <p className="text-yellow-500 text-sm font-serif font-medium">
-                      💰 You will wager {roomData.wager} ETH to enter this duel
+                      💰 You will wager {formatEther(roomData.wager)} ETH to
+                      enter this duel
                     </p>
                   </div>
                 </div>
@@ -314,7 +346,9 @@ export default function JoinRoom() {
 
               {/* Tomb Code Section */}
               <div className="space-y-4">
-                <Label className="text-lg font-egyptian font-semibold">Your Sacred Code</Label>
+                <Label className="text-lg font-egyptian font-semibold">
+                  Your Sacred Code
+                </Label>
 
                 {/* Vault Display */}
                 <VaultDisplay
@@ -374,7 +408,12 @@ export default function JoinRoom() {
               <div className="space-y-4">
                 <Button
                   onClick={handleJoinRoom}
-                  disabled={!isFormValid || isJoining || isLoading || roomValidation.isChecking}
+                  disabled={
+                    !isFormValid ||
+                    isJoining ||
+                    isLoading ||
+                    roomValidation.isChecking
+                  }
                   className="w-full h-12 text-lg font-bold btn-egyptian-primary"
                 >
                   {isJoining || isLoading ? (

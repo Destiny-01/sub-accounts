@@ -11,11 +11,11 @@ import { Navbar } from "@/components/layout/Navbar";
 import { ConnectWalletModal } from "@/components/wallet/ConnectWalletModal";
 import { RoomCreatedModal } from "@/components/modals/RoomCreatedModal";
 import { HowToPlayModal } from "@/components/modals/HowToPlayModal";
-import { useVaultWarsContract } from "@/hooks/useVaultWarsContract";
 import { useContractEvents } from "@/services/eventHandler";
 import { useToast } from "@/hooks/use-toast";
 import { Home, Shuffle } from "lucide-react";
 import { initializeFHE } from "@/lib/fhe";
+import { useTombSecret } from "@/hooks/useTombSecrets";
 
 export default function CreateRoom() {
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ export default function CreateRoom() {
     },
   });
 
-  const { createRoom, isLoading } = useVaultWarsContract(eventHandlers);
+  const { createRoom, getRoom, isLoading } = useTombSecret();
 
   const [wager, setWager] = useState("");
   const [vaultCode, setVaultCode] = useState<string[]>(["", "", "", ""]);
@@ -76,7 +76,7 @@ export default function CreateRoom() {
   };
 
   const isVaultComplete = vaultCode.every((digit) => digit !== "");
-  const MIN_WAGER = 0.01;
+  const MIN_WAGER = 0.0001;
   const isWagerValid = wager !== "" && parseFloat(wager) >= MIN_WAGER;
   const isFormValid = isVaultComplete && isWagerValid;
 
@@ -101,6 +101,7 @@ export default function CreateRoom() {
       });
       return;
     }
+    // console.log(await getRoom(5));
 
     try {
       setIsCreating(true);
@@ -115,8 +116,11 @@ export default function CreateRoom() {
 
       const roomId = await createRoom(vaultNumbers, wager);
 
-      // Room created modal will be shown via event handler
-    } catch (error: any) {
+      if (roomId) {
+        // Redirect to game page immediately
+        navigate(`/game/${roomId}`);
+      }
+    } catch (error: unknown) {
       console.error("Failed to create room:", error);
       // Error toast already shown by contract hook
     } finally {
@@ -155,7 +159,10 @@ export default function CreateRoom() {
 
               {/* Wager Input */}
               <div className="space-y-2">
-                <Label htmlFor="wager" className="text-lg font-egyptian font-semibold">
+                <Label
+                  htmlFor="wager"
+                  className="text-lg font-egyptian font-semibold"
+                >
                   Gold Wager (ETH)
                 </Label>
                 <Input
@@ -175,7 +182,9 @@ export default function CreateRoom() {
 
               {/* Tomb Code Section */}
               <div className="space-y-4">
-                <Label className="text-lg font-egyptian font-semibold">Your Sacred Code</Label>
+                <Label className="text-lg font-egyptian font-semibold">
+                  Your Sacred Code
+                </Label>
 
                 {/* Vault Display */}
                 <VaultDisplay

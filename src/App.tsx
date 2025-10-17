@@ -12,6 +12,7 @@ import JoinRoom from "./pages/JoinRoom";
 import GameScreen from "./pages/GameScreen";
 import NotFound from "./pages/NotFound";
 import "@rainbow-me/rainbowkit/styles.css";
+import { TombSecretProvider } from "./contexts/TombSecretsProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,21 +24,23 @@ const App = () => (
   <WagmiProvider config={wagmiConfig}>
     <QueryClientProvider client={queryClient}>
       <RainbowKitProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/create-room" element={<CreateRoom />} />
-              <Route path="/join-room" element={<JoinRoom />} />
-              <Route path="/join" element={<JoinRoom />} />
-              <Route path="/game/:roomId" element={<GameScreen />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <TombSecretProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/create-room" element={<CreateRoom />} />
+                <Route path="/join-room" element={<JoinRoom />} />
+                <Route path="/join" element={<JoinRoom />} />
+                <Route path="/game/:roomId" element={<GameScreen />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </TombSecretProvider>
       </RainbowKitProvider>
     </QueryClientProvider>
   </WagmiProvider>

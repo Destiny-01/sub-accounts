@@ -5,10 +5,14 @@ import TombIcon from "@/components/TombIcon";
 import { WalletButton } from "@/components/wallet/WalletButton";
 import { HowToPlayModal } from "@/components/modals/HowToPlayModal";
 import { HelpCircle } from "lucide-react";
+import { useTombSecret } from "@/hooks/useTombSecrets";
 
 export function Navbar() {
   const location = useLocation();
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const { connectWallet, connected, subAccount, universalAddress } =
+    useTombSecret();
+  console.log(subAccount, universalAddress);
 
   return (
     <>
@@ -32,7 +36,19 @@ export function Navbar() {
                 The Challenge
               </Button>
             </nav>
-            <WalletButton />
+            {connected ? (
+              <div>
+                <p>{subAccount?.address}</p>
+              </div>
+            ) : (
+              <Button
+                onClick={connectWallet}
+                variant="outline"
+                className="cyber-border bg-background hover:bg-primary/10"
+              >
+                Connect Wallet
+              </Button>
+            )}
           </div>
         </div>
       </nav>
