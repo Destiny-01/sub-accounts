@@ -14,7 +14,6 @@ import { HowToPlayModal } from "@/components/modals/HowToPlayModal";
 import { useContractEvents } from "@/services/eventHandler";
 import { useToast } from "@/hooks/use-toast";
 import { Home, Shuffle } from "lucide-react";
-import { initializeFHE } from "@/lib/fhe";
 import { useTombSecret } from "@/hooks/useTombSecrets";
 
 export default function CreateRoom() {
@@ -41,11 +40,6 @@ export default function CreateRoom() {
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [createdRoomId, setCreatedRoomId] = useState("");
   const [isCreating, setIsCreating] = useState(false);
-
-  // Initialize crypto on component mount
-  useEffect(() => {
-    initializeFHE().catch(console.error);
-  }, []);
 
   // Show how to play modal first, then proceed with room creation
   useEffect(() => {

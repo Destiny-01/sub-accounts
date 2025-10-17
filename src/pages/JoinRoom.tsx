@@ -14,7 +14,6 @@ import { RoomPhase, type RoomMetadata } from "@/contexts/TombSecretsProvider";
 import { useContractEvents } from "@/services/eventHandler";
 import { useToast } from "@/hooks/use-toast";
 import { Home, Shuffle, Loader2, AlertCircle, Check } from "lucide-react";
-import { initializeFHE } from "@/lib/fhe";
 import { useTombSecret } from "@/hooks/useTombSecrets";
 import { formatEther, parseEther } from "ethers";
 
@@ -140,11 +139,6 @@ export default function JoinRoom() {
     },
     [getRoom, address]
   );
-
-  // Initialize crypto on component mount
-  useEffect(() => {
-    initializeFHE().catch(console.error);
-  }, []);
 
   // Show how to play modal first, then proceed with room joining
   useEffect(() => {
