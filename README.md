@@ -1,73 +1,68 @@
-# Welcome to your Lovable project
+# Tomb Raiders 🏺
 
-## Project info
+A blockchain-based dueling game where two players compete to crack each other's secret 4-digit codes first. Think Mastermind meets ancient Egypt, powered by smart contracts.
 
-**URL**: https://lovable.dev/projects/7ac57e4c-6265-4b43-a6f9-885d73b09055
+## The Magic of Seamless Gameplay ✨
 
-## How can I edit this code?
+Here's where it gets cool: you only sign **once** when you start playing. That's it.
 
-There are several ways of editing your application.
+We use **subaccounts with auto spend permissions**, which means after that initial signature, all your game moves happen instantly without bugging you for approval every single time. No more "sign this, approve that" for every guess you make. Just pure, uninterrupted gameplay.
 
-**Use Lovable**
+It's like giving the game a prepaid card with a spending limit - you authorize it once, and then you can focus on actually playing instead of babysitting your wallet.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/7ac57e4c-6265-4b43-a6f9-885d73b09055) and start prompting.
+## What's This All About?
 
-Changes made via Lovable will be committed automatically to this repo.
+Tomb Raiders is a turn-based strategy game where:
 
-**Use your preferred IDE**
+1. **You seal your tomb** - Pick a secret 4-digit code and lock it on-chain with a wager
+2. **Face your opponent** - Take turns trying to excavate (guess) each other's codes
+3. **Get clues** - After each guess, you learn how many digits are correct and in the right position
+4. **Race to victory** - First player to crack the code wins the pot
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Think of it as a high-stakes code-breaking duel with an ancient Egyptian twist. No complex encryption stuff - just pure strategy and deduction.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## How It Works
 
-Follow these steps:
+- **Choose Your Code**: Any 4-digit combination from 0000 to 9999
+- **Place Your Wager**: Both players contribute to the prize pool
+- **Excavate & Deduce**: Use feedback from each guess to narrow down possibilities
+- **Winner Takes All**: Crack the code first, claim pharaoh's gold
+
+## Tech Stack
+
+- **React + TypeScript** - Because we like our code typed and our components reactive
+- **Vite** - Fast builds, faster refreshes
+- **Tailwind CSS** - For that beautiful desert aesthetic
+- **Smart Contracts** - Your game state lives on-chain
+- **Wagmi + RainbowKit** - Wallet connection made easy
+- **Base Subaccounts** - The secret sauce for seamless transactions
+
+## Running Locally
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone it
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Jump in
+cd tomb-raiders
 
-# Step 3: Install the necessary dependencies.
+# Install dependencies
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Fire it up
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Then head to `localhost:5173` and start raiding tombs.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Deploy
 
-**Use GitHub Codespaces**
+Built with [Lovable](https://lovable.dev) - just hit the Publish button and you're live.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## The Vibe
 
-## What technologies are used for this project?
+We ditched the cyberpunk vault-cracking theme for something with more... historical flair. Ancient tombs, hieroglyphs, sacred codes, and desert mysteries. Same addictive gameplay, way cooler aesthetic.
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/7ac57e4c-6265-4b43-a6f9-885d73b09055) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+*May the ancient spirits guide your guesses* 🔮
