@@ -53,11 +53,7 @@ npm i
 npm run dev
 ```
 
-Then head to `localhost:5173` and start raiding tombs.
-
-## Deploy
-
-Built with [Lovable](https://lovable.dev) - just hit the Publish button and you're live.
+Then head to `localhost:8080` and start raiding tombs.
 
 ## The Vibe
 
