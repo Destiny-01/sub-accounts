@@ -1,24 +1,5 @@
 export const ABI = [
   {
-    inputs: [
-      {
-        internalType: "uint8[4]",
-        name: "vault",
-        type: "uint8[4]",
-      },
-    ],
-    name: "createRoom",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "roomId",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "payable",
-    type: "function",
-  },
-  {
     anonymous: false,
     inputs: [
       {
@@ -44,24 +25,6 @@ export const ABI = [
     type: "event",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "roomId",
-        type: "uint256",
-      },
-      {
-        internalType: "uint8[4]",
-        name: "vault",
-        type: "uint8[4]",
-      },
-    ],
-    name: "joinRoom",
-    outputs: [],
-    stateMutability: "payable",
-    type: "function",
-  },
-  {
     anonymous: false,
     inputs: [
       {
@@ -82,30 +45,17 @@ export const ABI = [
         name: "submitter",
         type: "address",
       },
-    ],
-    name: "ProbeSubmitted",
-    type: "event",
-  },
-  {
-    anonymous: false,
-    inputs: [
       {
-        indexed: true,
-        internalType: "uint256",
-        name: "roomId",
-        type: "uint256",
+        indexed: false,
+        internalType: "uint8",
+        name: "breaches",
+        type: "uint8",
       },
       {
-        indexed: true,
-        internalType: "uint256",
-        name: "turnIndex",
-        type: "uint256",
-      },
-      {
-        indexed: true,
-        internalType: "address",
-        name: "submitter",
-        type: "address",
+        indexed: false,
+        internalType: "uint8",
+        name: "signals",
+        type: "uint8",
       },
       {
         indexed: false,
@@ -187,24 +137,6 @@ export const ABI = [
     type: "event",
   },
   {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "roomId",
-        type: "uint256",
-      },
-      {
-        internalType: "uint8[4]",
-        name: "guess",
-        type: "uint8[4]",
-      },
-    ],
-    name: "submitProbe",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
     anonymous: false,
     inputs: [
       {
@@ -224,8 +156,36 @@ export const ABI = [
     type: "event",
   },
   {
+    inputs: [],
+    name: "VAULT_CODE_LENGTH",
+    outputs: [
+      {
+        internalType: "uint8",
+        name: "",
+        type: "uint8",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint8[4]",
+        name: "vault",
+        type: "uint8[4]",
+      },
+    ],
+    name: "createRoom",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "roomId",
+        type: "uint256",
+      },
+    ],
     stateMutability: "payable",
-    type: "receive",
+    type: "function",
   },
   {
     inputs: [
@@ -401,6 +361,24 @@ export const ABI = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "roomId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8[4]",
+        name: "vault",
+        type: "uint8[4]",
+      },
+    ],
+    name: "joinRoom",
+    outputs: [],
+    stateMutability: "payable",
     type: "function",
   },
   {
@@ -594,16 +572,25 @@ export const ABI = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "VAULT_CODE_LENGTH",
-    outputs: [
+    inputs: [
       {
-        internalType: "uint8",
-        name: "",
-        type: "uint8",
+        internalType: "uint256",
+        name: "roomId",
+        type: "uint256",
+      },
+      {
+        internalType: "uint8[4]",
+        name: "guess",
+        type: "uint8[4]",
       },
     ],
-    stateMutability: "view",
+    name: "submitProbe",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
+  },
+  {
+    stateMutability: "payable",
+    type: "receive",
   },
 ];

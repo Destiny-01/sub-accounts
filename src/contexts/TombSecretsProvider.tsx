@@ -8,10 +8,12 @@ import {
   parseEther,
   TransactionReceipt,
   Contract,
+  JsonRpcProvider,
 } from "ethers";
 import { ABI } from "@/lib/abi";
 import { formatEther } from "ethers";
-import { RoomPhase } from "@/types/game";
+import { RoomPhase, Guess } from "@/types/game";
+import { eventHandler } from "@/services/eventHandler";
 
 // Enhanced room metadata type
 export interface RoomMetadata {
@@ -76,6 +78,12 @@ export const TombSecretProvider = ({
   const [balance, setBalance] = useState<string>("0");
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
 
+  // Room state management
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [roomData, setRoomData] = useState<RoomMetadata | null>(null);
+  const [roomGuesses, setRoomGuesses] = useState<Guess[]>([]);
+  const [isListeningToEvents, setIsListeningToEvents] = useState(false);
+
   // Initialize SDK
   useEffect(() => {
     const initializeSDK = async () => {
@@ -92,6 +100,7 @@ export const TombSecretProvider = ({
         setProvider(providerInstance);
 
         // Create contract instance for encoding/decoding (read-only operations)
+        // We'll connect it to a provider for events when needed
         const contractInstance = new Contract(contractAddress!, ABI);
         setContract(contractInstance);
 
@@ -307,64 +316,85 @@ export const TombSecretProvider = ({
     [provider]
   );
 
-  async function getRoom(roomId: number): Promise<RoomMetadata> {
-    if (!provider) {
-      console.warn("Provider not available yet, waiting...");
-      // Wait for provider to be available
-      return new Promise((resolve, reject) => {
-        const checkProvider = () => {
-          if (provider) {
-            getRoomWithProvider(roomId).then(resolve).catch(reject);
-          } else {
-            setTimeout(checkProvider, 100);
-          }
+  const getRoomWithProvider = useCallback(
+    async (roomId: number): Promise<RoomMetadata> => {
+      if (!provider) {
+        throw new Error("Provider not available");
+      }
+
+      try {
+        console.log(roomId);
+        const iface = new Interface(ABI);
+        const data = iface.encodeFunctionData("getRoom", [roomId]);
+
+        const result = await provider.request({
+          method: "eth_call",
+          params: [{ to: contractAddress, data }, "latest"],
+        });
+
+        const decoded = iface.decodeFunctionResult(
+          "getRoom",
+          result as BytesLike
+        );
+
+        // Convert the decoded result to RoomMetadata format
+        const roomData: RoomMetadata = {
+          creator: decoded[0],
+          opponent: decoded[1],
+          wager: formatEther(decoded[2]),
+          phase: Number(decoded[3]) as RoomPhase,
+          turnCount: Number(decoded[4]),
+          encryptedWinner: decoded[5],
+          createdAt: Number(decoded[6]) * 1000,
+          lastActiveAt: Number(decoded[7]) * 1000,
+          winner: decoded[5] || undefined,
         };
-        checkProvider();
-      });
-    }
 
-    return getRoomWithProvider(roomId);
-  }
+        return roomData;
+      } catch (error) {
+        console.error("Error fetching room:", error);
+        throw error;
+      }
+    },
+    [provider]
+  );
 
-  async function getRoomWithProvider(roomId: number): Promise<RoomMetadata> {
-    if (!provider) {
-      throw new Error("Provider not available");
-    }
+  const getRoom = useCallback(
+    async (roomId: number): Promise<RoomMetadata> => {
+      if (!provider) {
+        console.warn("Provider not available yet, waiting...");
+        // Wait for provider to be available
+        return new Promise((resolve, reject) => {
+          const checkProvider = () => {
+            if (provider) {
+              getRoomWithProvider(roomId).then(resolve).catch(reject);
+            } else {
+              setTimeout(checkProvider, 100);
+            }
+          };
+          checkProvider();
+        });
+      }
 
-    try {
-      console.log(roomId);
-      const iface = new Interface(ABI);
-      const data = iface.encodeFunctionData("getRoom", [roomId]);
+      return getRoomWithProvider(roomId);
+    },
+    [provider, getRoomWithProvider]
+  );
 
-      const result = await provider.request({
-        method: "eth_call",
-        params: [{ to: contractAddress, data }, "latest"],
-      });
-
-      const decoded = iface.decodeFunctionResult(
-        "getRoom",
-        result as BytesLike
-      );
-
-      // Convert the decoded result to RoomMetadata format
-      const roomData: RoomMetadata = {
-        creator: decoded[0],
-        opponent: decoded[1],
-        wager: formatEther(decoded[2]),
-        phase: Number(decoded[3]) as RoomPhase,
-        turnCount: Number(decoded[4]),
-        encryptedWinner: decoded[5],
-        createdAt: Number(decoded[6]) * 1000,
-        lastActiveAt: Number(decoded[7]) * 1000,
-        winner: decoded[5] || undefined,
-      };
-
-      return roomData;
-    } catch (error) {
-      console.error("Error fetching room:", error);
-      throw error;
-    }
-  }
+  const loadRoomData = useCallback(
+    async (roomId: number) => {
+      try {
+        const data = await getRoom(roomId);
+        setRoomData(data);
+        return data;
+      } catch (error) {
+        console.error("Failed to load room data:", error);
+        setRoomData(null);
+        throw error;
+      }
+    },
+    [getRoom]
+  );
 
   const createRoom = useCallback(
     async (vaultCode: number[], wager: string) => {
@@ -567,10 +597,10 @@ export const TombSecretProvider = ({
 
       try {
         setIsLoading(true);
-        setStatus("Submitting guess...");
+        setStatus("Submitting probe...");
 
-        // Encode the function call data
-        const data = contract.interface.encodeFunctionData("submitGuess", [
+        // Encode the function call data using the correct function name
+        const data = contract.interface.encodeFunctionData("submitProbe", [
           BigInt(roomId),
           guess,
         ]);
@@ -588,7 +618,7 @@ export const TombSecretProvider = ({
           ],
         })) as string;
 
-        setStatus("Guess submitted, waiting for confirmation...");
+        setStatus("Probe submitted, waiting for confirmation...");
 
         // Wait for transaction receipt
         let receipt;
@@ -611,12 +641,41 @@ export const TombSecretProvider = ({
           throw new Error("Transaction receipt not found after timeout");
         }
 
-        console.log("Guess submitted:", receipt);
-        setStatus("Guess submitted successfully!");
-        return txHash;
+        console.log("Probe submitted:", receipt);
+
+        // Parse ProbeSubmitted event from logs
+        const probeSubmittedEvent = (receipt as TransactionReceipt)?.logs?.find(
+          (log) => {
+            try {
+              const parsedLog = contract.interface.parseLog(log);
+              return parsedLog?.name === "ProbeSubmitted";
+            } catch {
+              return false;
+            }
+          }
+        );
+
+        if (probeSubmittedEvent) {
+          const parsedEvent = contract.interface.parseLog(probeSubmittedEvent);
+          const submittedRoomId = parsedEvent?.args.roomId.toString();
+          const turnIndex = parsedEvent?.args.turnIndex.toString();
+          const submitter = parsedEvent?.args.submitter;
+
+          console.log("ProbeSubmitted event:", {
+            roomId: submittedRoomId,
+            turnIndex,
+            submitter,
+          });
+
+          setStatus("Probe submitted successfully!");
+          return txHash;
+        } else {
+          setStatus("Probe submitted but event not found");
+          return txHash;
+        }
       } catch (error) {
-        console.error("Error submitting guess:", error);
-        setStatus("Failed to submit guess");
+        console.error("Error submitting probe:", error);
+        setStatus("Failed to submit probe");
         throw error;
       } finally {
         setIsLoading(false);
@@ -642,6 +701,232 @@ export const TombSecretProvider = ({
     await sendCalls(calls, universalAddress, setLoadingUniversal);
   }, [sendCalls, universalAddress]);
 
+  // Event handling functions
+  const handleRoomJoined = useCallback(
+    (event: { roomId: string }) => {
+      console.log("Room joined event:", event, currentRoomId);
+      if (event.roomId === currentRoomId?.toString()) {
+        setStatus("Opponent joined! Game starting...");
+        // Load updated room data when opponent joins
+        loadRoomData(parseInt(event.roomId));
+      }
+    },
+    [currentRoomId, loadRoomData]
+  );
+
+  const handleResultComputed = useCallback(
+    async (event: {
+      roomId: string;
+      turnIndex: number;
+      submitter: string;
+      signedResult?: { breaches: number; signals: number };
+    }) => {
+      console.log("Result computed event:", event, currentRoomId);
+      if (event.roomId === currentRoomId?.toString()) {
+        const isPlayerResult =
+          event.submitter.toLowerCase() === subAccount?.address.toLowerCase();
+
+        // Fetch the actual probe data from the contract
+        try {
+          const iface = new Interface(ABI);
+          const data = iface.encodeFunctionData("getProbe", [
+            BigInt(event.roomId),
+            BigInt(event.turnIndex),
+          ]);
+
+          const result = await provider!.request({
+            method: "eth_call",
+            params: [{ to: contractAddress, data }, "latest"],
+          });
+
+          const decoded = iface.decodeFunctionResult(
+            "getProbe",
+            result as BytesLike
+          );
+          const actualGuess = decoded[1]; // The guess array (uint8[4])
+          const guessDigits = actualGuess.map((digit: number) =>
+            digit.toString()
+          );
+
+          setRoomGuesses((prev) => {
+            console.log("ResultComputed: Current guesses:", prev);
+            console.log(
+              "ResultComputed: Looking for turnIndex:",
+              event.turnIndex
+            );
+            console.log("ResultComputed: Fetched guess digits:", guessDigits);
+
+            const existingGuess = prev.find(
+              (guess) => guess.turnIndex === event.turnIndex
+            );
+            console.log("ResultComputed: Found existing guess:", existingGuess);
+
+            if (existingGuess) {
+              // Update existing guess with result and actual digits
+              return prev.map((guess) =>
+                guess.turnIndex === event.turnIndex
+                  ? {
+                      ...guess,
+                      digits: guessDigits,
+                      result: event.signedResult
+                        ? {
+                            breached: event.signedResult.breaches,
+                            injured: event.signedResult.signals,
+                          }
+                        : undefined,
+                      pending: false,
+                    }
+                  : guess
+              );
+            } else {
+              // Create new guess with result and actual digits
+              console.log(
+                "ResultComputed: Creating new guess for turnIndex:",
+                event.turnIndex
+              );
+              const newGuess: Guess = {
+                turnIndex: event.turnIndex,
+                digits: guessDigits,
+                timestamp: Date.now(),
+                pending: false,
+                result: event.signedResult
+                  ? {
+                      breached: event.signedResult.breaches,
+                      injured: event.signedResult.signals,
+                    }
+                  : undefined,
+              };
+
+              return [...prev, newGuess];
+            }
+          });
+        } catch (error) {
+          console.error("Failed to fetch probe data:", error);
+          // Fallback to the old behavior if fetching fails
+          setRoomGuesses((prev) => {
+            const existingGuess = prev.find(
+              (guess) => guess.turnIndex === event.turnIndex
+            );
+
+            if (existingGuess) {
+              return prev.map((guess) =>
+                guess.turnIndex === event.turnIndex
+                  ? {
+                      ...guess,
+                      result: event.signedResult
+                        ? {
+                            breached: event.signedResult.breaches,
+                            injured: event.signedResult.signals,
+                          }
+                        : undefined,
+                      pending: false,
+                    }
+                  : guess
+              );
+            } else {
+              const newGuess: Guess = {
+                turnIndex: event.turnIndex,
+                digits: [],
+                timestamp: Date.now(),
+                pending: false,
+                result: event.signedResult
+                  ? {
+                      breached: event.signedResult.breaches,
+                      injured: event.signedResult.signals,
+                    }
+                  : undefined,
+              };
+
+              return [...prev, newGuess];
+            }
+          });
+        }
+
+        if (isPlayerResult) {
+          setStatus("Your probe result computed!");
+        } else {
+          setStatus("Opponent's probe result computed!");
+        }
+
+        // Refresh room data to get updated turn count and phase
+        if (currentRoomId) {
+          loadRoomData(parseInt(currentRoomId));
+        }
+      }
+    },
+    [currentRoomId, subAccount?.address, loadRoomData, provider]
+  );
+
+  const handleWinnerDecrypted = useCallback(
+    (event: { roomId: string; winner: string }) => {
+      console.log("Winner decrypted event:", event);
+      if (event.roomId === currentRoomId.toString()) {
+        setStatus(`Winner: ${event.winner}`);
+        // Refresh room data to get final state
+        if (currentRoomId) {
+          getRoom(parseInt(currentRoomId));
+        }
+      }
+    },
+    [currentRoomId, getRoom]
+  );
+
+  const handleGameFinished = useCallback(
+    (event: { roomId: string; winner: string; amount: string }) => {
+      console.log("Game finished event:", event, currentRoomId);
+      if (event.roomId === currentRoomId.toString()) {
+        setStatus(
+          `Game finished! Winner: ${event.winner}, Amount: ${event.amount}`
+        );
+        // Refresh room data to get final state
+        if (currentRoomId) {
+          getRoom(parseInt(currentRoomId));
+        }
+      }
+    },
+    [currentRoomId, getRoom]
+  );
+
+  // Initialize event listeners when contract is ready
+  useEffect(() => {
+    if (contract && isProviderReady && !isListeningToEvents) {
+      console.log("Initializing event listeners...");
+
+      // Create a contract instance with a provider that supports event subscription
+      // We'll use a JsonRpcProvider connected to the Base Sepolia RPC
+      const eventProvider = new JsonRpcProvider("https://sepolia.base.org");
+      const contractWithProvider = new Contract(
+        contractAddress!,
+        ABI,
+        eventProvider
+      );
+
+      eventHandler.initialize(contractWithProvider, {
+        onRoomJoined: handleRoomJoined,
+        onResultComputed: handleResultComputed,
+        onWinnerDecrypted: handleWinnerDecrypted,
+        onGameFinished: handleGameFinished,
+      });
+
+      setIsListeningToEvents(true);
+    }
+
+    return () => {
+      if (isListeningToEvents) {
+        eventHandler.stopListening();
+        setIsListeningToEvents(false);
+      }
+    };
+  }, [
+    contract,
+    isProviderReady,
+    isListeningToEvents,
+    handleRoomJoined,
+    handleResultComputed,
+    handleWinnerDecrypted,
+    handleGameFinished,
+  ]);
+
   const disconnectWallet = useCallback(() => {
     // Reset all wallet-related states
     setSubAccount(null);
@@ -654,6 +939,42 @@ export const TombSecretProvider = ({
     setPlayerWins(0);
     setBalance("0");
     setIsLoadingBalance(false);
+
+    // Reset room state
+    setCurrentRoomId(null);
+    setRoomGuesses([]);
+    if (isListeningToEvents) {
+      eventHandler.stopListening();
+      setIsListeningToEvents(false);
+    }
+  }, [isListeningToEvents]);
+
+  // Room state management functions
+  const setCurrentRoom = useCallback((roomId: string | null) => {
+    setCurrentRoomId(roomId);
+    if (!roomId) {
+      setRoomGuesses([]);
+    }
+  }, []);
+
+  const addGuess = useCallback((guess: Guess) => {
+    console.log("addGuess: Adding guess:", guess);
+    setRoomGuesses((prev) => {
+      console.log("addGuess: Current guesses before:", prev);
+      const existing = prev.find((g) => g.turnIndex === guess.turnIndex);
+      if (existing) {
+        console.log("addGuess: Updating existing guess");
+        return prev.map((g) =>
+          g.turnIndex === guess.turnIndex ? { ...g, ...guess } : g
+        );
+      }
+      console.log("addGuess: Adding new guess");
+      return [...prev, guess];
+    });
+  }, []);
+
+  const removeGuess = useCallback((turnIndex: number) => {
+    setRoomGuesses((prev) => prev.filter((g) => g.turnIndex !== turnIndex));
   }, []);
 
   return (
@@ -671,6 +992,11 @@ export const TombSecretProvider = ({
         playerWins,
         balance,
         isLoadingBalance,
+        currentRoomId,
+        roomData,
+        roomGuesses,
+        isListeningToEvents,
+        loadRoomData,
         connectWallet,
         createSubAccount,
         getRoom,
@@ -680,6 +1006,9 @@ export const TombSecretProvider = ({
         submitGuess,
         sendCallsFromUniversal,
         disconnectWallet,
+        setCurrentRoom,
+        addGuess,
+        removeGuess,
       }}
     >
       {children}

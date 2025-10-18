@@ -5,7 +5,7 @@
  * to appropriate UI updates and state changes.
  */
 
-import { Contract } from "ethers";
+import { Contract, EventLog, Log } from "ethers";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -29,11 +29,6 @@ export interface RoomJoinedEvent extends ContractEvent {
 
 export interface VaultSubmittedEvent extends ContractEvent {
   who: string;
-}
-
-export interface ProbeSubmittedEvent extends ContractEvent {
-  turnIndex: number;
-  submitter: string;
 }
 
 export interface ResultComputedEvent extends ContractEvent {
@@ -70,7 +65,6 @@ export type EventHandlers = {
   onRoomCreated?: (event: RoomCreatedEvent) => void;
   onRoomJoined?: (event: RoomJoinedEvent) => void;
   onVaultSubmitted?: (event: VaultSubmittedEvent) => void;
-  onProbeSubmitted?: (event: ProbeSubmittedEvent) => void;
   onResultComputed?: (event: ResultComputedEvent) => void;
   onDecryptionRequested?: (event: DecryptionRequestedEvent) => void;
   onWinnerDecrypted?: (event: WinnerDecryptedEvent) => void;
@@ -81,8 +75,8 @@ export type EventHandlers = {
 class VaultWarsEventHandler {
   private contract: Contract | null = null;
   private handlers: EventHandlers = {};
-  private activeListeners: string[] = [];
   public isListening = false;
+  private pollInterval: NodeJS.Timeout | null = null;
 
   /**
    * Initialize event handling with contract instance
@@ -101,7 +95,7 @@ class VaultWarsEventHandler {
   }
 
   /**
-   * Start listening to all contract events
+   * Start listening to all contract events using polling instead of filters
    */
   private startListening() {
     if (!this.contract || this.isListening) return;
@@ -109,209 +103,219 @@ class VaultWarsEventHandler {
     console.log("[EventHandler] Starting to listen for contract events");
     this.isListening = true;
 
-    // RoomCreated Event
-    this.contract.on("RoomCreated", (roomId, creator, wager, token, event) => {
-      const eventData: RoomCreatedEvent = {
-        roomId: roomId.toString(),
-        creator,
-        wager: wager.toString(),
-        token,
-        transactionHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: Date.now(),
-      };
+    // Use polling instead of filters to avoid filter management issues
+    this.startPolling();
+  }
 
-      console.log("[EventHandler] RoomCreated:", eventData);
-      this.handlers.onRoomCreated?.(eventData);
-    });
+  /**
+   * Start polling for events instead of using filters
+   */
+  private startPolling() {
+    if (!this.contract || !this.isListening) return;
 
-    // RoomJoined Event
-    this.contract.on("RoomJoined", (roomId, opponent, event) => {
-      const eventData: RoomJoinedEvent = {
-        roomId: roomId.toString(),
-        opponent,
-        transactionHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: Date.now(),
-      };
-
-      console.log("[EventHandler] RoomJoined:", eventData);
-      this.handlers.onRoomJoined?.(eventData);
-    });
-
-    // VaultSubmitted Event
-    this.contract.on("VaultSubmitted", (roomId, who, event) => {
-      const eventData: VaultSubmittedEvent = {
-        roomId: roomId.toString(),
-        who,
-        transactionHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: Date.now(),
-      };
-
-      console.log("[EventHandler] VaultSubmitted:", eventData);
-      this.handlers.onVaultSubmitted?.(eventData);
-    });
-
-    // ProbeSubmitted Event
-    this.contract.on(
-      "ProbeSubmitted",
-      (roomId, turnIndex, submitter, event) => {
-        const eventData: ProbeSubmittedEvent = {
-          roomId: roomId.toString(),
-          turnIndex: turnIndex.toNumber(),
-          submitter,
-          transactionHash: event.transactionHash,
-          blockNumber: event.blockNumber,
-          timestamp: Date.now(),
-        };
-
-        console.log("[EventHandler] ProbeSubmitted:", eventData);
-        this.handlers.onProbeSubmitted?.(eventData);
+    // Poll every 2 seconds for new events
+    const pollInterval = setInterval(async () => {
+      if (!this.isListening) {
+        clearInterval(pollInterval);
+        return;
       }
-    );
 
-    // ResultComputed Event
-    this.contract.on(
-      "ResultComputed",
-      (roomId, turnIndex, submitter, isWin, signedResult, event) => {
-        const eventData: ResultComputedEvent = {
-          roomId: roomId.toString(),
-          turnIndex: turnIndex.toNumber(),
-          submitter,
-          isWin, // This might be encrypted boolean
-          transactionHash: event.transactionHash,
-          blockNumber: event.blockNumber,
-          timestamp: Date.now(),
-        };
+      try {
+        await this.checkForNewEvents();
+      } catch (error) {
+        console.warn("[EventHandler] Error polling for events:", error);
+      }
+    }, 2000);
 
-        // If signed result is provided, verify signature
-        if (signedResult && signedResult.signature) {
-          const payload = JSON.stringify({
-            roomId: eventData.roomId,
-            turnIndex: eventData.turnIndex,
-            breaches: signedResult.breaches,
-            signals: signedResult.signals,
-          });
+    // Store the interval ID for cleanup
+    this.pollInterval = pollInterval;
+  }
 
-          // const isValidSignature = verifySignature(
-          //   'gateway_public_key', // TODO: Use real gateway public key
-          //   payload,
-          //   signedResult.signature
-          // );
+  /**
+   * Check for new events by querying recent blocks
+   */
+  private async checkForNewEvents() {
+    if (!this.contract) return;
 
-          // if (isValidSignature) {
-          eventData.signedResult = signedResult;
-          // } else {
-          //   console.warn('[EventHandler] Invalid signature on ResultComputed event');
-          // }
+    try {
+      // Get the latest block number
+      const latestBlock =
+        await this.contract.runner!.provider!.getBlockNumber();
+      const fromBlock = Math.max(0, latestBlock - 10); // Check last 10 blocks
+
+      // Query all events from recent blocks
+      const allEvents = await this.contract.queryFilter(
+        "*",
+        fromBlock,
+        latestBlock
+      );
+
+      for (const event of allEvents) {
+        await this.processEvent(event as EventLog | Log);
+      }
+    } catch (error) {
+      console.warn("[EventHandler] Error checking for events:", error);
+    }
+  }
+
+  /**
+   * Process a single event and route to appropriate handler
+   */
+  private async processEvent(event: EventLog | Log) {
+    // Only process EventLog events (not raw Log events)
+    if (!event || !("eventName" in event) || !event.eventName) return;
+
+    const eventName = event.eventName;
+    const args = event.args;
+
+    try {
+      switch (eventName) {
+        case "RoomCreated": {
+          const roomCreatedData: RoomCreatedEvent = {
+            roomId: String(args.roomId),
+            creator: String(args.creator),
+            wager: String(args.wager),
+            token: String(args.token),
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            timestamp: Date.now(),
+          };
+          console.log("[EventHandler] RoomCreated:", roomCreatedData);
+          this.handlers.onRoomCreated?.(roomCreatedData);
+          break;
         }
 
-        console.log("[EventHandler] ResultComputed:", eventData);
-        this.handlers.onResultComputed?.(eventData);
+        case "RoomJoined": {
+          const roomJoinedData: RoomJoinedEvent = {
+            roomId: String(args.roomId),
+            opponent: String(args.opponent),
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            timestamp: Date.now(),
+          };
+          console.log("[EventHandler] RoomJoined:", roomJoinedData);
+          this.handlers.onRoomJoined?.(roomJoinedData);
+          break;
+        }
+
+        case "VaultSubmitted": {
+          const vaultSubmittedData: VaultSubmittedEvent = {
+            roomId: String(args.roomId),
+            who: String(args.who),
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            timestamp: Date.now(),
+          };
+          console.log("[EventHandler] VaultSubmitted:", vaultSubmittedData);
+          this.handlers.onVaultSubmitted?.(vaultSubmittedData);
+          break;
+        }
+
+        case "ResultComputed": {
+          const resultComputedData: ResultComputedEvent = {
+            roomId: String(args.roomId),
+            turnIndex: Number(args.turnIndex),
+            submitter: String(args.submitter),
+            isWin: Boolean(args.isWin),
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            timestamp: Date.now(),
+          };
+
+          // Extract breaches and signals directly from the updated ABI
+          if (args.breaches !== undefined && args.signals !== undefined) {
+            resultComputedData.signedResult = {
+              breaches: Number(args.breaches),
+              signals: Number(args.signals),
+              signature: "", // Not provided in the updated ABI
+            };
+          }
+
+          console.log("[EventHandler] ResultComputed:", resultComputedData);
+          this.handlers.onResultComputed?.(resultComputedData);
+          break;
+        }
+
+        case "DecryptionRequested": {
+          const decryptionRequestedData: DecryptionRequestedEvent = {
+            roomId: String(args.roomId),
+            requestId: String(args.requestId),
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            timestamp: Date.now(),
+          };
+          console.log(
+            "[EventHandler] DecryptionRequested:",
+            decryptionRequestedData
+          );
+          this.handlers.onDecryptionRequested?.(decryptionRequestedData);
+          break;
+        }
+
+        case "WinnerDecrypted": {
+          const winnerDecryptedData: WinnerDecryptedEvent = {
+            roomId: String(args.roomId),
+            winner: String(args.winner),
+            signature: String(args.signature || ""),
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            timestamp: Date.now(),
+          };
+          console.log("[EventHandler] WinnerDecrypted:", winnerDecryptedData);
+          this.handlers.onWinnerDecrypted?.(winnerDecryptedData);
+          break;
+        }
+
+        case "GameFinished": {
+          const gameFinishedData: GameFinishedEvent = {
+            roomId: String(args.roomId),
+            winner: String(args.winner),
+            amount: String(args.amount),
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            timestamp: Date.now(),
+          };
+          console.log("[EventHandler] GameFinished:", gameFinishedData);
+          this.handlers.onGameFinished?.(gameFinishedData);
+          break;
+        }
+
+        case "RoomCancelled": {
+          const roomCancelledData: RoomCancelledEvent = {
+            roomId: String(args.roomId),
+            by: String(args.by),
+            transactionHash: event.transactionHash,
+            blockNumber: event.blockNumber,
+            timestamp: Date.now(),
+          };
+          console.log("[EventHandler] RoomCancelled:", roomCancelledData);
+          this.handlers.onRoomCancelled?.(roomCancelledData);
+          break;
+        }
       }
-    );
-
-    // DecryptionRequested Event
-    this.contract.on("DecryptionRequested", (roomId, requestId, event) => {
-      const eventData: DecryptionRequestedEvent = {
-        roomId: roomId.toString(),
-        requestId: requestId.toString(),
-        transactionHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: Date.now(),
-      };
-
-      console.log("[EventHandler] DecryptionRequested:", eventData);
-      this.handlers.onDecryptionRequested?.(eventData);
-    });
-
-    // WinnerDecrypted Event
-    this.contract.on("WinnerDecrypted", (roomId, winner, signature, event) => {
-      const eventData: WinnerDecryptedEvent = {
-        roomId: roomId.toString(),
-        winner,
-        signature,
-        transactionHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: Date.now(),
-      };
-
-      // Verify signature if provided
-      // if (signature) {
-      //   const payload = JSON.stringify({ roomId: eventData.roomId, winner });
-      //   const isValidSignature = verifySignature(
-      //     'gateway_public_key', // TODO: Use real gateway public key
-      //     payload,
-      //     signature
-      //   );
-
-      //   if (!isValidSignature) {
-      //     console.warn('[EventHandler] Invalid signature on WinnerDecrypted event');
-      //     return; // Don't process invalid results
-      //   }
-      // }
-
-      console.log("[EventHandler] WinnerDecrypted:", eventData);
-      this.handlers.onWinnerDecrypted?.(eventData);
-    });
-
-    // GameFinished Event
-    this.contract.on("GameFinished", (roomId, winner, amount, event) => {
-      const eventData: GameFinishedEvent = {
-        roomId: roomId.toString(),
-        winner,
-        amount: amount.toString(),
-        transactionHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: Date.now(),
-      };
-
-      console.log("[EventHandler] GameFinished:", eventData);
-      this.handlers.onGameFinished?.(eventData);
-    });
-
-    // RoomCancelled Event
-    this.contract.on("RoomCancelled", (roomId, by, event) => {
-      const eventData: RoomCancelledEvent = {
-        roomId: roomId.toString(),
-        by,
-        transactionHash: event.transactionHash,
-        blockNumber: event.blockNumber,
-        timestamp: Date.now(),
-      };
-
-      console.log("[EventHandler] RoomCancelled:", eventData);
-      this.handlers.onRoomCancelled?.(eventData);
-    });
-
-    this.activeListeners = [
-      "RoomCreated",
-      "RoomJoined",
-      "VaultSubmitted",
-      "ProbeSubmitted",
-      "ResultComputed",
-      "DecryptionRequested",
-      "WinnerDecrypted",
-      "GameFinished",
-      "RoomCancelled",
-    ];
+    } catch (error) {
+      console.warn(
+        `[EventHandler] Error processing ${eventName} event:`,
+        error
+      );
+    }
   }
 
   /**
    * Stop listening to contract events
    */
   stopListening() {
-    if (!this.contract || !this.isListening) return;
+    if (!this.isListening) return;
 
     console.log("[EventHandler] Stopping contract event listeners");
 
-    this.activeListeners.forEach((eventName) => {
-      this.contract?.removeAllListeners(eventName);
-    });
+    // Clear the polling interval
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
 
     this.isListening = false;
-    this.activeListeners = [];
   }
 
   /**
@@ -321,7 +325,7 @@ class VaultWarsEventHandler {
     if (!this.contract) return [];
 
     try {
-      const filter = this.contract.filters.ProbeSubmitted(roomId);
+      const filter = this.contract.filters.ResultComputed(roomId);
       const events = await this.contract.queryFilter(filter, fromBlock);
       return events;
     } catch (error) {
@@ -364,17 +368,6 @@ export function useContractEvents(handlers: EventHandlers) {
         description: "Opponent joined! The vault war has started.",
       });
       handlers.onRoomJoined?.(event);
-    },
-
-    onProbeSubmitted: (event) => {
-      if (handlers.onProbeSubmitted) {
-        handlers.onProbeSubmitted(event);
-      } else {
-        toast({
-          title: "🔍 Probe Launched",
-          description: `Probe #${event.turnIndex + 1} submitted to blockchain.`,
-        });
-      }
     },
 
     onResultComputed: (event) => {

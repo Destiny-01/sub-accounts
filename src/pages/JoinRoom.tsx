@@ -35,9 +35,7 @@ export default function JoinRoom() {
         });
 
         // Navigate to game screen with room details
-        navigate(
-          `/game?roomId=${roomId}&playerAddress=${address}&opponentAddress=${event.roomId}&wager=0.1`
-        );
+        navigate(`/game/${roomId}`);
       }
     },
   });
@@ -223,7 +221,7 @@ export default function JoinRoom() {
       const joinedRoomId = await tombJoinRoom(
         roomId,
         vaultNumbers,
-        formatEther(roomData!.wager)
+        roomData!.wager
       );
 
       if (joinedRoomId) {
@@ -320,7 +318,7 @@ export default function JoinRoom() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Gold Wager:</span>
                       <span className="font-semibold">
-                        {formatEther(roomData.wager)} ETH
+                        {roomData.wager} ETH
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -332,8 +330,7 @@ export default function JoinRoom() {
                   </div>
                   <div className="bg-yellow-500/10 border-2 border-double border-yellow-500/30 rounded p-3 mt-3">
                     <p className="text-yellow-500 text-sm font-serif font-medium">
-                      💰 You will wager {formatEther(roomData.wager)} ETH to
-                      enter this duel
+                      💰 You will wager {roomData.wager} ETH to enter this duel
                     </p>
                   </div>
                 </div>

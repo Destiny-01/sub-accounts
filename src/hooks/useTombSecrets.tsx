@@ -2,6 +2,7 @@ import { SubAccount, RoomMetadata } from "@/contexts/TombSecretsProvider";
 import { ProviderInterface } from "@base-org/account";
 import { Contract } from "ethers";
 import { createContext, useContext } from "react";
+import { Guess } from "@/types/game";
 
 interface TombSecretContextValue {
   provider: ProviderInterface | null;
@@ -16,11 +17,16 @@ interface TombSecretContextValue {
   playerWins: number;
   balance: string;
   isLoadingBalance: boolean;
+  currentRoomId: string | null;
+  roomData: RoomMetadata | null;
+  roomGuesses: Guess[];
+  isListeningToEvents: boolean;
 
   connectWallet: () => Promise<void>;
   createSubAccount: () => Promise<void>;
   setIsLoading: (isLoading: boolean) => void;
   getRoom: (roomId: number) => Promise<RoomMetadata>;
+  loadRoomData: (roomId: number) => Promise<RoomMetadata>;
   createRoom: (vaultCode: number[], wager: string) => Promise<string | null>;
   joinRoom: (
     roomId: string,
@@ -30,6 +36,9 @@ interface TombSecretContextValue {
   submitGuess: (roomId: string, guess: number[]) => Promise<string>;
   sendCallsFromUniversal: () => Promise<void>;
   disconnectWallet: () => void;
+  setCurrentRoom: (roomId: string | null) => void;
+  addGuess: (guess: Guess) => void;
+  removeGuess: (turnIndex: number) => void;
 }
 
 // ✅ Custom hook for easy consumption

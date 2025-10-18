@@ -5,10 +5,10 @@ import HieroglyphBackground from "@/components/HieroglyphBackground";
 import { Navbar } from "@/components/layout/Navbar";
 import { HowToPlayModal } from "@/components/modals/HowToPlayModal";
 import { RoomMetadata } from "@/contexts/TombSecretsProvider";
-import { useContractEvents } from "@/services/eventHandler";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Loader2, HelpCircle } from "lucide-react";
 import { useTombSecret } from "@/hooks/useTombSecrets";
+import { Guess } from "@/types/game";
 
 interface GuessData {
   turnIndex: number;
@@ -25,10 +25,22 @@ export default function GameScreen() {
   const { roomId } = useParams();
   const { toast } = useToast();
 
-  const { getRoom, isProviderReady, submitGuess, contract, subAccount } = useTombSecret();
+  const {
+    getRoom,
+    loadRoomData,
+    isProviderReady,
+    submitGuess,
+    contract,
+    subAccount,
+    currentRoomId,
+    roomData,
+    roomGuesses,
+    setCurrentRoom,
+    addGuess,
+    removeGuess,
+  } = useTombSecret();
 
-  // State for room data
-  const [roomData, setRoomData] = useState<RoomMetadata | null>(null);
+  // State for loading
   const [loading, setLoading] = useState(true);
 
   const [gameEndModal, setGameEndModal] = useState<{
@@ -45,94 +57,42 @@ export default function GameScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
-  // Real game data from contract
-  const [playerGuesses, setPlayerGuesses] = useState<GuessData[]>([]);
-  const [opponentGuesses, setOpponentGuesses] = useState<GuessData[]>([]);
+  // Determine game state based on turn index and player role
+  const currentTurnIndex = roomGuesses.length;
+  const isPlayerCreator =
+    roomData?.creator.toLowerCase() === subAccount?.address.toLowerCase();
+  const isPlayerTurn = isPlayerCreator
+    ? currentTurnIndex % 2 === 0
+    : currentTurnIndex % 2 === 1;
 
-  // Setup event handlers
-  const eventHandlers = useContractEvents({
-    onProbeSubmitted: (event) => {
-      console.log("Probe submitted:", event);
-      // Don't add yet, wait for result
-    },
-    onResultComputed: (event) => {
-      console.log("Result computed:", event);
-      if (event.roomId !== roomId) return;
-
-      const guessData: GuessData = {
-        turnIndex: event.turnIndex,
-        digits: [], // Will be filled from somewhere
-        result: event.signedResult
-          ? {
-              breached: event.signedResult.breaches,
-              injured: event.signedResult.signals,
-            }
-          : undefined,
-        timestamp: event.timestamp,
-      };
-
-      // Determine if this is player or opponent guess
-      const isPlayerGuess = event.submitter.toLowerCase() === subAccount?.address.toLowerCase();
-      
-      if (isPlayerGuess) {
-        setPlayerGuesses((prev) => {
-          const existing = prev.find((g) => g.turnIndex === event.turnIndex);
-          if (existing) {
-            return prev.map((g) =>
-              g.turnIndex === event.turnIndex
-                ? { ...g, result: guessData.result }
-                : g
-            );
-          }
-          return [...prev, guessData];
-        });
-      } else {
-        setOpponentGuesses((prev) => {
-          const existing = prev.find((g) => g.turnIndex === event.turnIndex);
-          if (existing) {
-            return prev.map((g) =>
-              g.turnIndex === event.turnIndex
-                ? { ...g, result: guessData.result }
-                : g
-            );
-          }
-          return [...prev, guessData];
-        });
-      }
-    },
-  });
-
-  // Initialize event listeners
+  // Set current room when component mounts
   useEffect(() => {
-    if (contract) {
-      const { eventHandler } = require("@/services/eventHandler");
-      eventHandler.initialize(contract, eventHandlers);
-      
-      return () => {
-        eventHandler.stopListening();
-      };
+    if (roomId) {
+      setCurrentRoom(roomId);
     }
-  }, [contract, eventHandlers]);
+
+    return () => {
+      setCurrentRoom(null);
+    };
+  }, [roomId, setCurrentRoom]);
+
+  // Separate player and opponent guesses from roomGuesses
+  // Player guesses are determined by comparing with room creator address
+  const playerGuesses = roomGuesses.filter((guess) =>
+    isPlayerCreator ? guess.turnIndex % 2 === 0 : guess.turnIndex % 2 === 1
+  );
+  const opponentGuesses = roomGuesses.filter((guess) =>
+    isPlayerCreator ? guess.turnIndex % 2 === 1 : guess.turnIndex % 2 === 0
+  );
 
   // Load room data on mount
   useEffect(() => {
-    const loadRoomData = async () => {
+    const loadRoomDataEffect = async () => {
       if (!roomId || !isProviderReady) return;
 
       try {
         setLoading(true);
-        const data = await getRoom(Number(roomId));
-        console.log(data);
-        if (!data) {
-          toast({
-            title: "❌ Room not found",
-            description: "This room does not exist or has expired.",
-            variant: "destructive",
-          });
-          navigate("/");
-        } else {
-          setRoomData(data as RoomMetadata);
-        }
+        await loadRoomData(Number(roomId));
       } catch (error) {
         console.error("Failed to load room:", error);
         toast({
@@ -140,13 +100,14 @@ export default function GameScreen() {
           description: "Could not connect to the game room.",
           variant: "destructive",
         });
+        navigate("/");
       } finally {
         setLoading(false);
       }
     };
 
-    loadRoomData();
-  }, [roomId, getRoom, toast, navigate, isProviderReady]);
+    loadRoomDataEffect();
+  }, [roomId, loadRoomData, toast, navigate, isProviderReady]);
 
   const handleDigitSelect = (digit: string) => {
     const emptyIndex = selectedDigits.findIndex((d) => !d);
@@ -197,13 +158,14 @@ export default function GameScreen() {
       setIsSubmitting(true);
 
       // Add optimistic update
-      const newGuess: GuessData = {
-        turnIndex: playerGuesses.length,
+      const newGuess: Guess = {
+        turnIndex: currentTurnIndex,
         digits: [...selectedDigits],
         timestamp: Date.now(),
+        pending: true,
       };
 
-      setPlayerGuesses((prev) => [...prev, newGuess]);
+      addGuess(newGuess);
 
       // Submit to blockchain
       const guess = selectedDigits.map(Number);
@@ -222,11 +184,19 @@ export default function GameScreen() {
         variant: "destructive",
       });
       // Remove optimistic update on error
-      setPlayerGuesses((prev) => prev.slice(0, -1));
+      removeGuess(currentTurnIndex);
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedDigits, playerGuesses.length, toast, roomId, submitGuess]);
+  }, [
+    selectedDigits,
+    currentTurnIndex,
+    toast,
+    roomId,
+    submitGuess,
+    addGuess,
+    removeGuess,
+  ]);
 
   const handleReturnHome = () => {
     navigate("/");
@@ -249,9 +219,6 @@ export default function GameScreen() {
     });
   };
 
-  // Determine game state - force player turn for testing
-  const isPlayerTurn = true;
-
   const isComplete = selectedDigits.every((digit) => digit !== "");
   const canSubmit = isComplete && !isSubmitting && isPlayerTurn;
 
@@ -272,10 +239,12 @@ export default function GameScreen() {
       case 0:
         return "Waiting for opponent";
       case 1:
-        return "Battle in progress";
+        return "Locked";
       case 2:
-        return "Battle completed";
+        return "Battle in progress";
       case 3:
+        return "Room finished";
+      case 4:
         return "Room cancelled";
       default:
         return "Unknown status";
@@ -302,7 +271,7 @@ export default function GameScreen() {
   }
 
   // Show waiting state if no opponent
-  if (roomData.phase === 0) {
+  if (Number(roomData.phase) === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 relative overflow-hidden">
         <Navbar />
@@ -315,7 +284,7 @@ export default function GameScreen() {
               </h1>
               <div className="space-y-4">
                 <div className="text-lg text-accent font-serif">
-                  {getPhaseText(roomData.phase)}
+                  {getPhaseText(Number(roomData.phase))}
                 </div>
                 <div className="animate-pulse text-primary">
                   Awaiting rival explorer...
@@ -352,7 +321,7 @@ export default function GameScreen() {
                   WAGER: {roomData.wager} ETH
                 </span>
                 <span className="text-primary font-serif">
-                  STATUS: {getPhaseText(roomData.phase)}
+                  STATUS: {getPhaseText(Number(roomData.phase))}
                 </span>
               </div>
             </div>
@@ -386,11 +355,15 @@ export default function GameScreen() {
               <h2 className="text-sm font-semibold text-primary font-serif">
                 MY EXCAVATIONS → OPPONENT TOMB
               </h2>
-              {isPlayerTurn && (
-                <span className="text-xs text-primary animate-pulse font-serif">
-                  YOUR TURN
-                </span>
-              )}
+              <span
+                className={`text-xs font-serif ${
+                  isPlayerTurn
+                    ? "text-primary animate-pulse"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {isPlayerTurn ? "YOUR TURN" : "OPPONENT'S TURN"}
+              </span>
             </div>
 
             <div className="space-y-2">
@@ -458,13 +431,9 @@ export default function GameScreen() {
                   </div>
                   <div className="text-xs font-serif">
                     {isPlayerTurn ? (
-                      <span className="text-primary animate-pulse">
-                        READY
-                      </span>
+                      <span className="text-primary animate-pulse">READY</span>
                     ) : (
-                      <span className="text-accent animate-pulse">
-                        WAIT...
-                      </span>
+                      <span className="text-accent animate-pulse">WAIT...</span>
                     )}
                   </div>
                 </div>
@@ -479,6 +448,31 @@ export default function GameScreen() {
             </h2>
 
             <div className="space-y-2">
+              {/* Opponent's Current Guess (if they have one) */}
+              {opponentGuesses.length > 0 && (
+                <div className="rounded-lg p-3 bg-accent/10 border border-accent/30">
+                  <div className="flex items-center justify-between">
+                    <div className="flex gap-1.5">
+                      {opponentGuesses[opponentGuesses.length - 1].digits.map(
+                        (digit, index) => (
+                          <div
+                            key={index}
+                            className="w-12 h-12 rounded border border-accent/30 bg-accent/10 flex items-center justify-center font-serif font-bold text-xl text-accent"
+                          >
+                            {digit}
+                          </div>
+                        )
+                      )}
+                    </div>
+                    <div className="text-xs font-serif">
+                      <span className="text-accent animate-pulse">
+                        CURRENT GUESS
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Opponent's Active Row */}
               <div className="rounded-lg p-3 bg-card/20 border border-accent/20">
                 <div className="flex items-center justify-between">
@@ -493,9 +487,7 @@ export default function GameScreen() {
                     ))}
                   </div>
                   <div className="text-xs font-serif">
-                    <span className="text-muted-foreground">
-                      AWAITING
-                    </span>
+                    <span className="text-muted-foreground">AWAITING</span>
                   </div>
                 </div>
               </div>
@@ -539,65 +531,72 @@ export default function GameScreen() {
         </div>
 
         {/* Input Keypad Overlay */}
-        {isPlayerTurn && (
-          <div className="fixed bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 via-background/90 to-transparent backdrop-blur-sm">
-            <div className="container mx-auto max-w-md">
-              {/* Number Grid */}
-              <div className="grid grid-cols-5 gap-2 mb-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((number) => (
-                  <Button
-                    key={number}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDigitSelect(number.toString())}
-                    disabled={
-                      selectedDigits.includes(number.toString()) ||
-                      selectedDigits.every((d) => d !== "")
-                    }
-                    className="h-10 text-lg font-serif bg-primary/5 hover:bg-primary/20 border-primary/30 text-primary"
-                  >
-                    {number}
-                  </Button>
-                ))}
-              </div>
+        <div
+          className={`fixed bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/95 via-background/90 to-transparent backdrop-blur-sm ${
+            !isPlayerTurn ? "opacity-50" : ""
+          }`}
+        >
+          <div className="container mx-auto max-w-md">
+            {/* Number Grid */}
+            <div className="grid grid-cols-5 gap-2 mb-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((number) => (
+                <Button
+                  key={number}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDigitSelect(number.toString())}
+                  disabled={
+                    !isPlayerTurn ||
+                    selectedDigits.includes(number.toString()) ||
+                    selectedDigits.every((d) => d !== "")
+                  }
+                  className="h-10 text-lg font-serif bg-primary/5 hover:bg-primary/20 border-primary/30 text-primary disabled:opacity-50"
+                >
+                  {number}
+                </Button>
+              ))}
+            </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDeleteLast}
-                  disabled={selectedDigits.every((d) => d === "")}
-                  className="font-serif text-xs"
-                >
-                  Delete
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClear}
-                  disabled={selectedDigits.every((d) => d === "")}
-                  className="font-serif text-xs"
-                >
-                  Clear
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleSubmit}
-                  disabled={!canSubmit}
-                  className="min-w-28 font-serif bg-primary hover:bg-primary/90"
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "EXCAVATE"
-                  )}
-                </Button>
-              </div>
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDeleteLast}
+                disabled={
+                  !isPlayerTurn || selectedDigits.every((d) => d === "")
+                }
+                className="font-serif text-xs disabled:opacity-50"
+              >
+                Delete
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClear}
+                disabled={
+                  !isPlayerTurn || selectedDigits.every((d) => d === "")
+                }
+                className="font-serif text-xs disabled:opacity-50"
+              >
+                Clear
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                className="min-w-28 font-serif bg-primary hover:bg-primary/90 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "EXCAVATE"
+                )}
+              </Button>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Game End Modal */}
@@ -632,10 +631,7 @@ export default function GameScreen() {
             <div className="flex gap-4 justify-center">
               {gameEndModal.outcome === "won" ? (
                 gameEndModal.claimed ? (
-                  <Button
-                    onClick={handleReturnHome}
-                    className="min-w-32"
-                  >
+                  <Button onClick={handleReturnHome} className="min-w-32">
                     Exit to Temple
                   </Button>
                 ) : (
@@ -647,10 +643,7 @@ export default function GameScreen() {
                   </Button>
                 )
               ) : (
-                <Button
-                  onClick={handleReturnHome}
-                  className="min-w-32"
-                >
+                <Button onClick={handleReturnHome} className="min-w-32">
                   Exit to Temple
                 </Button>
               )}
